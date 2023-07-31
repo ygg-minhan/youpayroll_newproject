@@ -92,7 +92,7 @@ def get_employees_details(emp_id):
 
     elif response.status_code == 401:
         generate_access_token()
-        get_employees_details(emp_id)
+        response = get_employees_details(emp_id)
         if response.status_code == 200:
             return response
 
