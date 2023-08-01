@@ -1,7 +1,7 @@
 import logging
 from django.contrib import admin
 from django.contrib import messages
-from .models import Employee
+from .models import Employee, TDS, Wage
 from zohopeople.utils import get_employees_details
 
 logger = logging.getLogger(__name__)
@@ -23,8 +23,8 @@ def fetch_details(modeladmin, request, queryset):
         if response_data_list:
             for i in response_data_list.values():
                 fetched_data = i[0]
-                employee.name = fetched_data["FirstName"] + " " + fetched_data[
-                    "LastName"]
+                employee.full_name = fetched_data["FirstName"] + \
+                                     " " + fetched_data["LastName"]
                 employee.email = fetched_data["EmailID"]
                 employee.pan_no = fetched_data["Pan_Number"]
                 employee.address = fetched_data["Permanent_Address"]
@@ -34,8 +34,11 @@ def fetch_details(modeladmin, request, queryset):
 
 
 class EmployeeAdmin(admin.ModelAdmin):
-    readonly_fields = ["name", "email", "pan_no", "address"]
+    list_display = ["emp_id", "full_name", "employment_type"]
+    readonly_fields = ["full_name", "email", "pan_no", "address"]
     actions = [fetch_details]
 
 
+admin.site.register(TDS)
 admin.site.register(Employee, EmployeeAdmin)
+admin.site.register(Wage)
