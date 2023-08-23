@@ -1,7 +1,7 @@
 import logging
 from django.contrib import admin
 from django.contrib import messages
-from .models import Employee, TDS, Wage
+from .models import Employee, TDS, Wage, BankDetails
 from zohopeople.utils import get_employees_details
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,7 @@ def fetch_details(modeladmin, request, queryset):
                 employee.email = fetched_data["EmailID"]
                 employee.pan_no = fetched_data["Pan_Number"]
                 employee.address = fetched_data["Permanent_Address"]
+                employee.date_of_joining = fetched_data["Dateofjoining"]
                 employee.save()
                 messages.success(request, "Employee details were "
                                           "successfully fetched.")
@@ -35,10 +36,17 @@ def fetch_details(modeladmin, request, queryset):
 
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = ["emp_id", "full_name", "employment_type"]
-    readonly_fields = ["full_name", "email", "pan_no", "address"]
+    readonly_fields = ["full_name", "email", "pan_no", "address",
+                       "date_of_joining"]
     actions = [fetch_details]
+
+
+class BankDetailsAdmin(admin.ModelAdmin):
+    list_display = ["employee", "bank_name", "account_type",
+                    "employee_acknowledgement"]
 
 
 admin.site.register(TDS)
 admin.site.register(Employee, EmployeeAdmin)
 admin.site.register(Wage)
+admin.site.register(BankDetails, BankDetailsAdmin)

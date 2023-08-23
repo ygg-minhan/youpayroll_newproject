@@ -6,7 +6,7 @@ from zohopeople.models import ZohoPeopleFormToken
 from zohopeople.utils import tgeneration_call_api
 
 
-def zoho_form_token_generation():
+def zoho_form_token_generation(grand_token):
     """
     Generate Access token for sending data to Zoho People
     and Refresh token to generate new Access token. Store both
@@ -17,7 +17,7 @@ def zoho_form_token_generation():
         'client_id': config('ZOHOPEOPLE_CLIENT_ID'),
         'client_secret': config('ZOHOPEOPLE_CLIENT_SECRET'),
         'redirect_uri': ZP_API_REDIR_URI,
-        'code': config('ZOHOPEOPLE_FORM_GRAND_TOKEN')
+        'code': grand_token
     }
 
     url = ZP_API_ATOKEN_DOM_URL
@@ -36,5 +36,11 @@ def zoho_form_token_generation():
 
 
 class Command(BaseCommand):
+    help = "Creates refresh tokens"
+
+    def add_arguments(self, parser):
+        parser.add_argument("grand_token", type=str)
+
     def handle(self, *args, **options):
-        zoho_form_token_generation()
+        grand_token = options["grand_token"]
+        zoho_form_token_generation(grand_token)
