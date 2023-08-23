@@ -86,13 +86,13 @@ def get_employees_details(emp_id):
 
     body = {"searchParams": json.dumps(search_params)}
 
-    response = requests.post(url=url, headers=headers, params=body)
+    response = requests.post(url=url, headers=headers, params=body, timeout=30)
     if response.status_code == 200:
         return response
 
     elif response.status_code == 401:
         generate_access_token()
-        get_employees_details(emp_id)
+        response = get_employees_details(emp_id)
         if response.status_code == 200:
             return response
 
