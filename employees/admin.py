@@ -1,7 +1,7 @@
 import logging
 from django.contrib import admin
 from django.contrib import messages
-from .models import Employee, TDS, Wage, BankDetails
+from .models import Employee, TDS, Earning, BankDetails
 from zohopeople.utils import get_employees_details
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,11 @@ class BankDetailsAdmin(admin.ModelAdmin):
                     "employee_acknowledgement"]
 
 
+class EarningAdmin(admin.ModelAdmin):
+    list_display = ["employee", "label"]
+
+
 admin.site.register(TDS)
 admin.site.register(Employee, EmployeeAdmin)
-admin.site.register(Wage)
+admin.site.register(Earning, EarningAdmin)
 admin.site.register(BankDetails, BankDetailsAdmin)

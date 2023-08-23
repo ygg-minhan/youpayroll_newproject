@@ -36,8 +36,9 @@ class Employee(models.Model):
         return self.full_name
 
 
-class Wage(models.Model):
-    wage = models.FloatField()
+class Earning(models.Model):
+    amount = models.FloatField()
+    label = models.CharField(max_length=50)
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
 
     def __str__(self):
