@@ -11,9 +11,9 @@ class TDS(models.Model):
         ("technical-consultants", "Technical Consultants"),
         ("professional-consultant", "Professional Consultant"),
         ("employment", "Employment"),
-        ("intern", "Intern"),
+        ("apprentices", "apprentices"),
     ]
-    id = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
+    uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
                           editable=False)
     employment_type = models.CharField(max_length=50,
                                        choices=EMPLOYMENT_TYPE_CHOICES,
@@ -51,7 +51,7 @@ class Employee(models.Model):
     def __str__(self):
         if self.full_name is not None:
             return self.full_name
-        return self.emp_code
+        return str(self.emp_id)
 
     def delete(self, *args, **kwargs):
         self.status = 'terminated'
@@ -59,7 +59,7 @@ class Employee(models.Model):
 
 
 class Earning(models.Model):
-    id = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
+    uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
                           editable=False)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     label = models.CharField(max_length=50)
@@ -70,7 +70,7 @@ class Earning(models.Model):
 
 
 class BankDetails(models.Model):
-    id = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
+    uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
                           editable=False)
     ACKNOWLEDGEMENT_CHOICES = [
         ("pending", "Pending"),
