@@ -11,7 +11,7 @@ class TDS(models.Model):
         ("technical-consultants", "Technical Consultants"),
         ("professional-consultant", "Professional Consultant"),
         ("employment", "Employment"),
-        ("apprentices", "apprentices"),
+        ("apprentices", "Apprentices"),
     ]
     uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
                           editable=False)
