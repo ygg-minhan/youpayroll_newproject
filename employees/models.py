@@ -1,4 +1,6 @@
+import uuid
 from django.db import models
+from django.contrib.auth.models import User
 
 
 # Create your models here.
@@ -6,15 +8,17 @@ from django.db import models
 # Model containing Tax Deducted at Source information
 class TDS(models.Model):
     EMPLOYMENT_TYPE_CHOICES = [
-        ("Technical consultants", "Technical consultants"),
-        ("Professional Consultant", "Professional Consultant"),
-        ("Employment", "Employment"),
-        ("Intern", "Intern"),
+        ("technical-consultants", "Technical Consultants"),
+        ("professional-consultant", "Professional Consultant"),
+        ("employment", "Employment"),
+        ("apprentices", "Apprentices"),
     ]
+    uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
+                          editable=False)
     employment_type = models.CharField(max_length=50,
                                        choices=EMPLOYMENT_TYPE_CHOICES,
                                        unique=True)
-    tds_percentage = models.IntegerField()
+    tds_percentage = models.FloatField()
 
     def __str__(self):
         return self.employment_type
@@ -22,7 +26,19 @@ class TDS(models.Model):
 
 # Stores the information of the Employee in the database
 class Employee(models.Model):
-    emp_id = models.CharField(max_length=100, primary_key=True)
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('terminated', 'Terminated'),
+        ('resigned', 'Resigned')
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES,
+                              default='active')
+    emp_id = models.UUIDField(primary_key=True, unique=True,
+                              default=uuid.uuid4,
+                          editable=False)
+    emp_code = models.CharField(
+        max_length=100, help_text="Employee ID obtained from Zoho people")
+    user = models.OneToOneField(User, on_delete=models.PROTECT)
     full_name = models.CharField(max_length=100, null=True, blank=True)
     email = models.EmailField(max_length=100, null=True, blank=True)
     pan_no = models.CharField(max_length=10, null=True, blank=True)
@@ -33,24 +49,33 @@ class Employee(models.Model):
                                         to_field="employment_type")
 
     def __str__(self):
-        return self.full_name
+        if self.full_name is not None:
+            return self.full_name
+        return str(self.emp_id)
+
+    def delete(self, *args, **kwargs):
+        self.status = 'terminated'
+        self.save()
 
 
 class Earning(models.Model):
-    amount = models.FloatField()
+    uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
+                          editable=False)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
     label = models.CharField(max_length=50)
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.employee.full_name
+        return self.label
 
 
 class BankDetails(models.Model):
+    uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
+                          editable=False)
     ACKNOWLEDGEMENT_CHOICES = [
-        ("Pending", "PENDING"),
-        ("Confirmed", "CONFIRMED"),
-        ("Disapproved", "DISAPPROVED")
-
+        ("pending", "Pending"),
+        ("confirmed", "Confirmed"),
+        ("disapproved", "Disapproved")
     ]
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     bank_name = models.CharField(max_length=100, null=True, blank=True)
@@ -64,8 +89,8 @@ class BankDetails(models.Model):
     branch_address = models.TextField(null=True, blank=True)
     employee_acknowledgement = models.CharField(max_length=50,
                                                 choices=ACKNOWLEDGEMENT_CHOICES,
-                                                default="Pending",
+                                                default="pending",
                                                 unique=True)
 
     def __str__(self):
-        return self.employee.full_name
+        return self.account_holder_name

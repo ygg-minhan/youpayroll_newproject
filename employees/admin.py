@@ -2,7 +2,9 @@ import logging
 from django.contrib import admin
 from django.contrib import messages
 from .models import Employee, TDS, Earning, BankDetails
+from employees.utils import restrict_queryset_by_group
 from zohopeople.utils import get_employees_details
+
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +13,7 @@ logger = logging.getLogger(__name__)
 @admin.action(description="Fetch Employee details from Zoho people")
 def fetch_details(modeladmin, request, queryset):
     for employee in queryset:
-        emp_id = employee.emp_id
+        emp_id = employee.emp_code
         # Calling the function get_employee_details and return response
         try:
             response_data = get_employees_details(emp_id).json()
@@ -35,19 +37,36 @@ def fetch_details(modeladmin, request, queryset):
 
 
 class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ["emp_id", "full_name", "employment_type"]
+    list_display = ["emp_code", "full_name", "employment_type"]
     readonly_fields = ["full_name", "email", "pan_no", "address",
                        "date_of_joining"]
     actions = [fetch_details]
+
+    def delete_queryset(self, request, queryset):
+        queryset.update(status='terminated')
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return restrict_queryset_by_group(qs, request.user)
 
 
 class BankDetailsAdmin(admin.ModelAdmin):
     list_display = ["employee", "bank_name", "account_type",
                     "employee_acknowledgement"]
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return restrict_queryset_by_group(qs, request.user,
+                                          employee_field='employee')
+
 
 class EarningAdmin(admin.ModelAdmin):
     list_display = ["employee", "label"]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return restrict_queryset_by_group(qs, request.user,
+                                          employee_field='employee')
 
 
 admin.site.register(TDS)
