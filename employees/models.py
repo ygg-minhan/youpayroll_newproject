@@ -107,3 +107,33 @@ class BankDetails(models.Model):
 
 
 auditlog.register(BankDetails)
+
+
+# Stores the details of amount paid to each tds type and their account details
+class PayRecordRegister(models.Model):
+    amount = models.DecimalField(max_digits=10, decimal_places=2,
+                                   null=True, blank=True)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    month = models.CharField(null=True, blank=True, max_length=15)
+    account_number = models.CharField(null=True, blank=True, max_length=16)
+    tds_percentage = models.FloatField(null=True, blank=True)
+
+    def __str__(self):
+        if self.employee.full_name is not None:
+            return self.employee.full_name
+        return str(self.employee.emp_id)
+
+
+class PayRecord(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True,
+                                 blank=True)
+    month = models.CharField(null=True, blank=True, max_length=15)
+    bank_account = models.CharField(null=True, blank=True, max_length=16)
+    pay_register = models.ForeignKey(PayRecordRegister,
+                                     on_delete=models.CASCADE)
+
+    def __str__(self):
+        if self.employee.full_name is not None:
+            return self.employee.full_name
+        return str(self.employee.emp_id)

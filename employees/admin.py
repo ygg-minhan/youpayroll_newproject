@@ -1,7 +1,8 @@
 import logging
 from django.contrib import admin
 from django.contrib import messages
-from .models import Employee, TDS, Earning, BankDetails
+from .models import Employee, TDS, Earning, BankDetails, PayRecordRegister, \
+    PayRecord
 from employees.utils import restrict_queryset_by_group
 from zohopeople.utils import get_employees_details
 
@@ -69,7 +70,18 @@ class EarningAdmin(admin.ModelAdmin):
                                           employee_field='employee')
 
 
+class PayRecordAdmin(admin.ModelAdmin):
+    list_display = ["employee", "month"]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return restrict_queryset_by_group(qs, request.user,
+                                          employee_field='employee')
+
+
 admin.site.register(TDS)
 admin.site.register(Employee, EmployeeAdmin)
 admin.site.register(Earning, EarningAdmin)
 admin.site.register(BankDetails, BankDetailsAdmin)
+admin.site.register(PayRecordRegister)
+admin.site.register(PayRecord, PayRecordAdmin)
