@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.contrib.auth.models import User
+from auditlog.registry import auditlog
 
 
 # Create your models here.
@@ -22,6 +23,9 @@ class TDS(models.Model):
 
     def __str__(self):
         return self.employment_type
+
+
+auditlog.register(TDS)
 
 
 # Stores the information of the Employee in the database
@@ -58,6 +62,9 @@ class Employee(models.Model):
         self.save()
 
 
+auditlog.register(Employee)
+
+
 class Earning(models.Model):
     uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
                           editable=False)
@@ -67,6 +74,9 @@ class Earning(models.Model):
 
     def __str__(self):
         return self.label
+
+
+auditlog.register(Earning)
 
 
 class BankDetails(models.Model):
@@ -94,3 +104,6 @@ class BankDetails(models.Model):
 
     def __str__(self):
         return self.account_holder_name
+
+
+auditlog.register(BankDetails)
