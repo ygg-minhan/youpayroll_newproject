@@ -1,0 +1,18 @@
+name: Run SonarScan on Sandbox
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+      types: [opened, synchronize, reopened]
+
+jobs:
+  sonar-scan:
+    uses: YouGotaGift/devops_organization_actions/.github/workflows/sonar-scan.yaml@main
+    with:
+      SONAR_EXTERNAL_URL: ${{ vars.SONAR_EXTERNAL_URL }}
+      APPLICATION_NAME: youpayroll
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_INTERNAL_URL: ${{ secrets.SONAR_INTERNAL_URL }}
