@@ -8,7 +8,7 @@ from auditlog.registry import auditlog
 
 # Model containing Tax Deducted at Source information
 class TDS(models.Model):
-    EMPLOYMENT_TYPE_CHOICES = [
+    JOB_CATEGORY_CHOICES = [
         ("technical-consultants", "Technical Consultants"),
         ("professional-consultant", "Professional Consultant"),
         ("employment", "Employment"),
@@ -16,20 +16,20 @@ class TDS(models.Model):
     ]
     uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
                           editable=False)
-    employment_type = models.CharField(max_length=50,
-                                       choices=EMPLOYMENT_TYPE_CHOICES,
+    job_category = models.CharField(max_length=50,
+                                       choices=JOB_CATEGORY_CHOICES,
                                        unique=True)
     tds_percentage = models.FloatField()
 
     def __str__(self):
-        return self.employment_type
+        return self.job_category
 
 
 auditlog.register(TDS)
 
 
-# Stores the information of the Employee in the database
-class Employee(models.Model):
+# Stores the information of the Payee in the database
+class Payee(models.Model):
     STATUS_CHOICES = [
         ('active', 'Active'),
         ('terminated', 'Terminated'),
@@ -37,46 +37,45 @@ class Employee(models.Model):
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,
                               default='active')
-    emp_id = models.UUIDField(primary_key=True, unique=True,
-                              default=uuid.uuid4,
-                          editable=False)
-    emp_code = models.CharField(
-        max_length=100, help_text="Employee ID obtained from Zoho people")
+    uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False,
+                            primary_key=False)
+    hrm_id = models.CharField(max_length=10, primary_key=True,
+                              help_text="Payee ID obtained from Zoho people")
     user = models.OneToOneField(User, on_delete=models.PROTECT)
     full_name = models.CharField(max_length=100, null=True, blank=True)
     email = models.EmailField(max_length=100, null=True, blank=True)
     pan_no = models.CharField(max_length=10, null=True, blank=True)
     date_of_joining = models.CharField(max_length=50, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
-    employment_type = models.ForeignKey(TDS, on_delete=models.SET_NULL,
+    tds_type = models.ForeignKey(TDS, on_delete=models.SET_NULL,
                                         blank=True, null=True,
-                                        to_field="employment_type")
+                                        to_field="job_category")
 
     def __str__(self):
         if self.full_name is not None:
             return self.full_name
-        return str(self.emp_id)
+        return self.hrm_id
 
     def delete(self, *args, **kwargs):
         self.status = 'terminated'
         self.save()
 
 
-auditlog.register(Employee)
+auditlog.register(Payee)
 
 
-class Earning(models.Model):
+class Payment(models.Model):
     uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
                           editable=False)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     label = models.CharField(max_length=50)
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.label
 
 
-auditlog.register(Earning)
+auditlog.register(Payment)
 
 
 class BankDetails(models.Model):
@@ -87,7 +86,7 @@ class BankDetails(models.Model):
         ("confirmed", "Confirmed"),
         ("disapproved", "Disapproved")
     ]
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
     bank_name = models.CharField(max_length=100, null=True, blank=True)
     account_no = models.CharField(max_length=100, null=True, blank=True)
     account_holder_name = models.CharField(max_length=100, null=True,
@@ -97,7 +96,7 @@ class BankDetails(models.Model):
     micr_code = models.CharField(max_length=100, null=True, blank=True)
     swift_code = models.CharField(max_length=100, null=True, blank=True)
     branch_address = models.TextField(null=True, blank=True)
-    employee_acknowledgement = models.CharField(max_length=50,
+    payee_acknowledgement = models.CharField(max_length=50,
                                                 choices=ACKNOWLEDGEMENT_CHOICES,
                                                 default="pending",
                                                 unique=True)
@@ -113,19 +112,19 @@ auditlog.register(BankDetails)
 class PayRecordRegister(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2,
                                    null=True, blank=True)
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
     month = models.CharField(null=True, blank=True, max_length=15)
     account_number = models.CharField(null=True, blank=True, max_length=16)
     tds_percentage = models.FloatField(null=True, blank=True)
 
     def __str__(self):
-        if self.employee.full_name is not None:
-            return self.employee.full_name
-        return str(self.employee.emp_id)
+        if self.payee.full_name is not None:
+            return self.payee.full_name
+        return self.payee.hrm_id
 
 
 class PayRecord(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True,
                                  blank=True)
     month = models.CharField(null=True, blank=True, max_length=15)
@@ -134,6 +133,6 @@ class PayRecord(models.Model):
                                      on_delete=models.CASCADE)
 
     def __str__(self):
-        if self.employee.full_name is not None:
-            return self.employee.full_name
-        return str(self.employee.emp_id)
+        if self.payee.full_name is not None:
+            return self.payee.full_name
+        return self.payee.hrm_id
