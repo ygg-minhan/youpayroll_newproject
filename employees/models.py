@@ -8,21 +8,20 @@ from auditlog.registry import auditlog
 
 # Model containing Tax Deducted at Source information
 class TDS(models.Model):
-    JOB_CATEGORY_CHOICES = [
+    TDS_LEGAL_NAME_CHOICES = [
         ("technical-consultants", "Technical Consultants"),
         ("professional-consultant", "Professional Consultant"),
         ("employment", "Employment"),
         ("apprentices", "Apprentices"),
     ]
-    uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
-                          editable=False)
-    job_category = models.CharField(max_length=50,
-                                       choices=JOB_CATEGORY_CHOICES,
-                                       unique=True)
+    uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
+    tds_legal_name = models.CharField(max_length=50,
+                                      choices=TDS_LEGAL_NAME_CHOICES,
+                                      unique=True)
     tds_percentage = models.FloatField()
 
     def __str__(self):
-        return self.job_category
+        return self.tds_legal_name
 
 
 auditlog.register(TDS)
@@ -37,19 +36,17 @@ class Payee(models.Model):
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,
                               default='active')
-    uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False,
-                            primary_key=False)
-    hrm_id = models.CharField(max_length=10, primary_key=True,
-                              help_text="Payee ID obtained from Zoho people")
+    uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
+    hrm_id = models.CharField(max_length=10, help_text="Payee ID obtained "
+                                                       "from Zoho people")
     user = models.OneToOneField(User, on_delete=models.PROTECT)
     full_name = models.CharField(max_length=100, null=True, blank=True)
     email = models.EmailField(max_length=100, null=True, blank=True)
     pan_no = models.CharField(max_length=10, null=True, blank=True)
     date_of_joining = models.CharField(max_length=50, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
-    tds_type = models.ForeignKey(TDS, on_delete=models.SET_NULL,
-                                        blank=True, null=True,
-                                        to_field="job_category")
+    tds_type = models.ForeignKey(TDS, on_delete=models.SET_NULL, blank=True,
+                                 null=True, to_field="tds_legal_name")
 
     def __str__(self):
         if self.full_name is not None:
@@ -65,8 +62,7 @@ auditlog.register(Payee)
 
 
 class Payment(models.Model):
-    uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
-                          editable=False)
+    uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     label = models.CharField(max_length=50)
     payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
@@ -79,13 +75,7 @@ auditlog.register(Payment)
 
 
 class BankDetails(models.Model):
-    uuid = models.UUIDField(primary_key=True, unique=True, default=uuid.uuid4,
-                          editable=False)
-    ACKNOWLEDGEMENT_CHOICES = [
-        ("pending", "Pending"),
-        ("confirmed", "Confirmed"),
-        ("disapproved", "Disapproved")
-    ]
+    uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
     bank_name = models.CharField(max_length=100, null=True, blank=True)
     account_no = models.CharField(max_length=100, null=True, blank=True)
@@ -96,10 +86,7 @@ class BankDetails(models.Model):
     micr_code = models.CharField(max_length=100, null=True, blank=True)
     swift_code = models.CharField(max_length=100, null=True, blank=True)
     branch_address = models.TextField(null=True, blank=True)
-    payee_acknowledgement = models.CharField(max_length=50,
-                                                choices=ACKNOWLEDGEMENT_CHOICES,
-                                                default="pending",
-                                                unique=True)
+    payee_acknowledgement = models.BooleanField(default=False)
 
     def __str__(self):
         return self.account_holder_name
@@ -110,8 +97,8 @@ auditlog.register(BankDetails)
 
 # Stores the details of amount paid to each tds type and their account details
 class PayRecordRegister(models.Model):
-    amount = models.DecimalField(max_digits=10, decimal_places=2,
-                                   null=True, blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True,
+                                 blank=True)
     payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
     month = models.CharField(null=True, blank=True, max_length=15)
     account_number = models.CharField(null=True, blank=True, max_length=16)
