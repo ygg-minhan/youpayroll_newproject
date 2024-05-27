@@ -1,7 +1,9 @@
 import uuid
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.contrib.auth.models import User
 from auditlog.registry import auditlog
+from employees.upload_helpers import user_directory_path, validate_image
 
 
 # Create your models here.
@@ -123,3 +125,22 @@ class PayRecord(models.Model):
         if self.payee.full_name is not None:
             return self.payee.full_name
         return self.payee.hrm_id
+
+
+# Stores the bank-acknowledgement file uploaded by the payee
+class BankDetailsAck(models.Model):
+    payee = models.ForeignKey(Payee, on_delete=models.CASCADE,
+                              related_name='bank_acknowledgement')
+    upload_date = models.DateTimeField(auto_now_add=True)
+    bank_details_screenshot = models.ImageField(
+        upload_to=user_directory_path, validators=[validate_image,
+                                                   FileExtensionValidator(
+                                                       allowed_extensions=[
+                                                           'jpg', 'jpeg',
+                                                           'png'])])
+
+    def __str__(self):
+        return self.payee.hrm_id
+
+
+auditlog.register(BankDetailsAck)
