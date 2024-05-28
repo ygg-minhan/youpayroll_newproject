@@ -4,6 +4,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from auditlog.registry import auditlog
 from employees.upload_helpers import user_directory_path, validate_image
+from employees.constants import MONTH_CHOICES
 
 
 # Create your models here.
@@ -99,17 +100,32 @@ auditlog.register(BankDetails)
 
 # Stores the details of amount paid to each tds type and their account details
 class PayRecordRegister(models.Model):
+    record_created = models.DateTimeField(auto_now_add=True)
+    month = models.IntegerField(choices=MONTH_CHOICES)
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True,
                                  blank=True)
     payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
-    month = models.CharField(null=True, blank=True, max_length=15)
+    bank_name = models.CharField(max_length=100, null=True, blank=True)
     account_number = models.CharField(null=True, blank=True, max_length=16)
+    account_holder_name = models.CharField(max_length=100, null=True,
+                                           blank=True)
+    account_type = models.CharField(max_length=10, null=True, blank=True)
+    ifsc_code = models.CharField(max_length=100, null=True, blank=True)
+    micr_code = models.CharField(max_length=100, null=True, blank=True)
+    swift_code = models.CharField(max_length=100, null=True, blank=True)
+    branch_address = models.TextField(null=True, blank=True)
     tds_percentage = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         if self.payee.full_name is not None:
             return self.payee.full_name
         return self.payee.hrm_id
+
+    class Meta:
+        unique_together = ('payee', 'month')
+
+
+auditlog.register(PayRecordRegister)
 
 
 class PayRecord(models.Model):
