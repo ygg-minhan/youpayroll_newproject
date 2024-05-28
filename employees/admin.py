@@ -1,8 +1,8 @@
 import logging
 from django.contrib import admin
 from django.contrib import messages
-from .models import Payee, TDS, Payment, BankDetails, PayRecordRegister, \
-    PayRecord
+from .models import (Payee, TDS, Payment, BankDetails, PayRecordRegister,
+                     PayRecord, BankDetailsAck)
 from employees.utils import restrict_queryset_by_group
 from zohopeople.utils import get_employees_details
 
@@ -83,5 +83,6 @@ admin.site.register(TDS)
 admin.site.register(Payee, PayeeAdmin)
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(BankDetails, BankDetailsAdmin)
+admin.site.register(BankDetailsAck)
 admin.site.register(PayRecordRegister)
 admin.site.register(PayRecord, PayRecordAdmin)
