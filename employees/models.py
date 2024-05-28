@@ -131,7 +131,7 @@ class PayRecord(models.Model):
 class BankDetailsAck(models.Model):
     payee = models.ForeignKey(Payee, on_delete=models.CASCADE,
                               related_name='bank_acknowledgement')
-    upload_date = models.DateTimeField(auto_now_add=True)
+    uploaded_date = models.DateTimeField(auto_now_add=True)
     bank_details_screenshot = models.ImageField(
         upload_to=user_directory_path, validators=[validate_image,
                                                    FileExtensionValidator(
