@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from auditlog.registry import auditlog
 from employees.upload_helpers import user_directory_path, validate_image
 from employees.constants import (MONTH_CHOICES, TDS_LEGAL_NAME_CHOICES,
-                                 STATUS_CHOICES)
+                                 STATUS_CHOICES, PAYEE_STATUS_HELP_TEXT)
 
 
 # Create your models here.
@@ -29,7 +29,8 @@ auditlog.register(TDS)
 class Payee(models.Model):
     is_deleted = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,
-                              default='active')
+                              default='active',
+                              help_text=PAYEE_STATUS_HELP_TEXT)
     uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     hrm_id = models.CharField(max_length=10, help_text="Payee ID obtained "
                                                        "from Zoho people")
@@ -48,7 +49,6 @@ class Payee(models.Model):
         return self.hrm_id
 
     def delete(self, *args, **kwargs):
-        self.status = 'terminated'
         self.is_deleted = True
         self.save()
 

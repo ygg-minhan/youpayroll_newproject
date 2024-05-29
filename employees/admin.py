@@ -45,10 +45,11 @@ class PayeeAdmin(admin.ModelAdmin):
     actions = [fetch_details]
 
     def delete_queryset(self, request, queryset):
-        queryset.update(status='terminated', is_deleted=True)
+        queryset.update(is_deleted=True)
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
+        queryset = super().get_queryset(request)
+        qs = queryset.filter(is_deleted=False)
         return restrict_queryset_by_group(qs, request.user)
 
 
