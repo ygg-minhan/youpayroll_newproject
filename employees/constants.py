@@ -1,4 +1,5 @@
 RESTRICTED_GROUPS = ['EMPLOYEE']
+
 JANUARY = 1
 FEBRUARY = 2
 MARCH = 3
@@ -24,4 +25,17 @@ MONTH_CHOICES = [
     (OCTOBER, 'October'),
     (NOVEMBER, 'November'),
     (DECEMBER, 'December'),
+]
+
+TDS_LEGAL_NAME_CHOICES = [
+    ("technical-consultants", "Technical Consultants"),
+    ("professional-consultant", "Professional Consultant"),
+    ("employment", "Employment"),
+    ("apprentices", "Apprentices"),
+]
+
+STATUS_CHOICES = [
+    ('active', 'Active'),
+    ('terminated', 'Terminated'),
+    ('resigned', 'Resigned')
 ]

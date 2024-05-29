@@ -4,19 +4,14 @@ from django.db import models
 from django.contrib.auth.models import User
 from auditlog.registry import auditlog
 from employees.upload_helpers import user_directory_path, validate_image
-from employees.constants import MONTH_CHOICES
+from employees.constants import (MONTH_CHOICES, TDS_LEGAL_NAME_CHOICES,
+                                 STATUS_CHOICES)
 
 
 # Create your models here.
 
 # Model containing Tax Deducted at Source information
 class TDS(models.Model):
-    TDS_LEGAL_NAME_CHOICES = [
-        ("technical-consultants", "Technical Consultants"),
-        ("professional-consultant", "Professional Consultant"),
-        ("employment", "Employment"),
-        ("apprentices", "Apprentices"),
-    ]
     uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     tds_legal_name = models.CharField(max_length=50,
                                       choices=TDS_LEGAL_NAME_CHOICES,
@@ -33,24 +28,19 @@ auditlog.register(TDS)
 # Stores the information of the Payee in the database
 class Payee(models.Model):
     is_deleted = models.BooleanField(default=False)
-    STATUS_CHOICES = [
-        ('active', 'Active'),
-        ('terminated', 'Terminated'),
-        ('resigned', 'Resigned')
-    ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,
                               default='active')
     uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     hrm_id = models.CharField(max_length=10, help_text="Payee ID obtained "
                                                        "from Zoho people")
     user = models.OneToOneField(User, on_delete=models.PROTECT)
+    tds_type = models.ForeignKey(TDS, on_delete=models.SET_NULL, blank=True,
+                                 null=True, to_field="tds_legal_name")
     full_name = models.CharField(max_length=100, null=True, blank=True)
     email = models.EmailField(max_length=100, null=True, blank=True)
     pan_no = models.CharField(max_length=10, null=True, blank=True)
     date_of_joining = models.CharField(max_length=50, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
-    tds_type = models.ForeignKey(TDS, on_delete=models.SET_NULL, blank=True,
-                                 null=True, to_field="tds_legal_name")
 
     def __str__(self):
         if self.full_name is not None:
