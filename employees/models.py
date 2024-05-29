@@ -32,6 +32,7 @@ auditlog.register(TDS)
 
 # Stores the information of the Payee in the database
 class Payee(models.Model):
+    is_deleted = models.BooleanField(default=False)
     STATUS_CHOICES = [
         ('active', 'Active'),
         ('terminated', 'Terminated'),
@@ -58,6 +59,7 @@ class Payee(models.Model):
 
     def delete(self, *args, **kwargs):
         self.status = 'terminated'
+        self.is_deleted = True
         self.save()
 
 

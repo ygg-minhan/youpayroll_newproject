@@ -38,13 +38,14 @@ def fetch_details(modeladmin, request, queryset):
 
 
 class PayeeAdmin(admin.ModelAdmin):
-    list_display = ["hrm_id", "full_name", "tds_type"]
+    list_display = ["hrm_id", "full_name", "tds_type", "status"]
     readonly_fields = ["full_name", "email", "pan_no", "address",
                        "date_of_joining"]
+    ordering = ("status",)
     actions = [fetch_details]
 
     def delete_queryset(self, request, queryset):
-        queryset.update(status='terminated')
+        queryset.update(status='terminated', is_deleted=True)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
