@@ -81,10 +81,27 @@ class BankDetails(models.Model):
     micr_code = models.CharField(max_length=100, null=True, blank=True)
     swift_code = models.CharField(max_length=100, null=True, blank=True)
     branch_address = models.TextField(null=True, blank=True)
-    payee_acknowledgement = models.BooleanField(default=False)
+    payee_acknowledgement = models.BooleanField(default=False, editable=False)
 
     def __str__(self):
         return self.account_holder_name
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            current_instance = BankDetails.objects.get(pk=self.pk)
+            if (self.payee != current_instance.payee or
+                self.bank_name != current_instance.bank_name or
+                self.account_no != current_instance.account_no or
+                self.account_holder_name !=
+                    current_instance.account_holder_name or
+                self.account_type != current_instance.account_type or
+                self.ifsc_code != current_instance.ifsc_code or
+                self.micr_code != current_instance.micr_code or
+                self.swift_code != current_instance.swift_code or
+                    self.branch_address !=
+                    current_instance.branch_address):
+                self.payee_acknowledgement = False
+        super().save(*args, **kwargs)
 
 
 auditlog.register(BankDetails)
