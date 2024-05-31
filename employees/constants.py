@@ -1,4 +1,5 @@
 RESTRICTED_GROUPS = ['EMPLOYEE']
+
 JANUARY = 1
 FEBRUARY = 2
 MARCH = 3
@@ -25,3 +26,22 @@ MONTH_CHOICES = [
     (NOVEMBER, 'November'),
     (DECEMBER, 'December'),
 ]
+
+TDS_LEGAL_NAME_CHOICES = [
+    ("technical-consultants", "Technical Consultants"),
+    ("professional-consultant", "Professional Consultant"),
+    ("employment", "Employment"),
+    ("apprentices", "Apprentices"),
+]
+
+STATUS_CHOICES = [
+    ('active', 'Active'),
+    ('removed', 'Removed'),
+    ('disengaged', 'Disengaged')
+]
+PAYEE_STATUS_HELP_TEXT = ('Select the current status of the payee. '
+                          '"Active" for currently working, '
+                          '"Removed" for those who have been removed from '
+                          'their position, and '
+                          '"Disengaged" for those who are no longer engaged '
+                          'with the company.')
