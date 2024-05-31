@@ -56,6 +56,7 @@ class PayeeAdmin(admin.ModelAdmin):
 class BankDetailsAdmin(admin.ModelAdmin):
     list_display = ["payee", "bank_name", "account_type",
                     "payee_acknowledgement"]
+    readonly_fields = ('payee_acknowledgement',)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
