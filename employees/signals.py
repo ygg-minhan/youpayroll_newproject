@@ -5,7 +5,7 @@ from .models import BankDetailsAck, BankDetails
 
 @receiver(post_save, sender=BankDetailsAck)
 def update_payee_acknowledgement(sender, instance, created, **kwargs):
-    if created:
+    if created and instance.approval_status:
         payee = instance.payee
         try:
             bank_details = BankDetails.objects.get(payee=payee)
