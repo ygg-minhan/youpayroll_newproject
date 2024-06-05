@@ -165,7 +165,7 @@ class BankDetailsAck(models.Model):
                                                            'png'])])
     # Indicates the approval status of the bank details. True if the bank
     # details are approved, False if rejected.
-    approval_status = models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=False)
     correction_comments = models.TextField(blank=True, null=True,
                                            help_text="Please specify any "
                                                      "mistaken areas found "
