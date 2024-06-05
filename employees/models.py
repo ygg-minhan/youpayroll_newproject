@@ -138,10 +138,11 @@ auditlog.register(PayRecordRegister)
 
 
 class PayRecord(models.Model):
+    record_created = models.DateTimeField(auto_now_add=True)
     payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
+    month = models.IntegerField(choices=MONTH_CHOICES)
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True,
                                  blank=True)
-    month = models.CharField(null=True, blank=True, max_length=15)
     bank_account = models.CharField(null=True, blank=True, max_length=16)
     pay_register = models.ForeignKey(PayRecordRegister,
                                      on_delete=models.CASCADE)
@@ -150,6 +151,12 @@ class PayRecord(models.Model):
         if self.payee.full_name is not None:
             return self.payee.full_name
         return self.payee.hrm_id
+
+    class Meta:
+        unique_together = ('payee', 'month')
+
+
+auditlog.register(PayRecord)
 
 
 # Stores the bank-acknowledgement file uploaded by the payee
