@@ -163,6 +163,13 @@ class BankDetailsAck(models.Model):
                                                        allowed_extensions=[
                                                            'jpg', 'jpeg',
                                                            'png'])])
+    # Indicates the approval status of the bank details. True if the bank
+    # details are approved, False if rejected.
+    is_approved = models.BooleanField(default=False)
+    correction_comments = models.TextField(blank=True, null=True,
+                                           help_text="Please specify any "
+                                                     "mistaken areas found "
+                                                     "in the bank details.")
 
     def __str__(self):
         return self.payee.hrm_id
