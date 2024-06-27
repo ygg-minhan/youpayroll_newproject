@@ -1,56 +1,65 @@
 import logging
 from django.contrib import admin
-from django.contrib import messages
-from .models import Employee, TDS, Earning, BankDetails
-from zohopeople.utils import get_employees_details
+from .models import (Payee, TDS, Payment, BankDetails, PayRecordRegister,
+                     PayRecord, BankDetailsAck)
+from employees.utils import restrict_queryset_by_group
+from .tasks import fetch_details
 
 logger = logging.getLogger(__name__)
 
 
-# Admin action to fetch employee details from zoho people
-@admin.action(description="Fetch Employee details from Zoho people")
-def fetch_details(modeladmin, request, queryset):
-    for employee in queryset:
-        emp_id = employee.emp_id
-        # Calling the function get_employee_details and return response
-        try:
-            response_data = get_employees_details(emp_id).json()
-            response_data_list = response_data["response"]["result"][0]
-        except Exception as e:
-            logger.warning(e)
-            response_data_list = {}
-
-        if response_data_list:
-            for i in response_data_list.values():
-                fetched_data = i[0]
-                employee.full_name = fetched_data["FirstName"] + \
-                                     " " + fetched_data["LastName"]
-                employee.email = fetched_data["EmailID"]
-                employee.pan_no = fetched_data["Pan_Number"]
-                employee.address = fetched_data["Permanent_Address"]
-                employee.date_of_joining = fetched_data["Dateofjoining"]
-                employee.save()
-                messages.success(request, "Employee details were "
-                                          "successfully fetched.")
-
-
-class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ["emp_id", "full_name", "employment_type"]
+class PayeeAdmin(admin.ModelAdmin):
+    list_display = ["hrm_id", "full_name", "tds_type", "status"]
     readonly_fields = ["full_name", "email", "pan_no", "address",
                        "date_of_joining"]
-    actions = [fetch_details]
+    ordering = ("status",)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        fetch_details.delay(obj.hrm_id)
+
+    def delete_queryset(self, request, queryset):
+        queryset.update(is_deleted=True)
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        qs = queryset.filter(is_deleted=False)
+        return restrict_queryset_by_group(qs, request.user)
 
 
 class BankDetailsAdmin(admin.ModelAdmin):
-    list_display = ["employee", "bank_name", "account_type",
-                    "employee_acknowledgement"]
+    list_display = ["payee", "bank_name", "account_type",
+                    "payee_acknowledgement"]
+    readonly_fields = ('payee_acknowledgement',)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return restrict_queryset_by_group(qs, request.user,
+                                          payee_field='payee')
 
 
-class EarningAdmin(admin.ModelAdmin):
-    list_display = ["employee", "label"]
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ["payee", "label"]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return restrict_queryset_by_group(qs, request.user,
+                                          payee_field='payee')
+
+
+class PayRecordAdmin(admin.ModelAdmin):
+    list_display = ["payee", "month"]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return restrict_queryset_by_group(qs, request.user,
+                                          payee_field='payee')
 
 
 admin.site.register(TDS)
-admin.site.register(Employee, EmployeeAdmin)
-admin.site.register(Earning, EarningAdmin)
+admin.site.register(Payee, PayeeAdmin)
+admin.site.register(Payment, PaymentAdmin)
 admin.site.register(BankDetails, BankDetailsAdmin)
+admin.site.register(BankDetailsAck)
+admin.site.register(PayRecordRegister)
+admin.site.register(PayRecord, PayRecordAdmin)
