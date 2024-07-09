@@ -8,3 +8,4 @@ celery_debug.log
 dump.rdb
 logs/
 celerybeat-schedule
+data/
