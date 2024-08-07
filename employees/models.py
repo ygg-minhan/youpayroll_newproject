@@ -1,4 +1,5 @@
 import uuid
+from django.utils.translation import gettext_lazy as _
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.contrib.auth.models import User
@@ -183,3 +184,41 @@ class BankDetailsAck(models.Model):
 
 
 auditlog.register(BankDetailsAck)
+
+
+class PayRunStatusChoices(models.TextChoices):
+    DUE = 'due', _('pay record entry creation in due')
+    IN_PROGRESS = 'in_progress', _('pay record entry creation in progress')
+    COMPLETED = 'completed',_('pay record entry creation completed')
+
+
+class PayRun(models.Model):
+    """
+    Model to store and verify monthly payment details for payees.
+
+    This model keeps track of payment details for each month before
+    processing payments.
+    Payments are only made to payees who are active and have
+    acknowledged their bank details.
+    """
+    month = models.IntegerField(choices=MONTH_CHOICES)
+    year = models.IntegerField()
+    status = models.CharField(max_length=20,
+                              choices=PayRunStatusChoices.choices,
+                              default=PayRunStatusChoices.DUE)
+    tds_percentage = models.FloatField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
+
+    def __str__(self):
+        if self.payee.full_name is not None:
+            return (f"{self.payee.full_name} - {self.get_month_display()} "
+                    f"{self.year} -{self.get_status_display()}")
+        return (f"{self.payee.hrm_id} - {self.get_month_display()} "
+                f"{self.year} - {self.get_status_display()}")
+
+    class Meta:
+        unique_together = ('payee', 'month', 'year')
+
+
+auditlog.register(PayRun)

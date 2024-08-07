@@ -1,7 +1,7 @@
 import logging
 from django.contrib import admin
 from .models import (Payee, TDS, Payment, BankDetails, PayRecordRegister,
-                     PayRecord, BankDetailsAck)
+                     PayRecord, BankDetailsAck, PayRun)
 from employees.utils import restrict_queryset_by_group
 from .tasks import fetch_details
 
@@ -56,6 +56,12 @@ class PayRecordAdmin(admin.ModelAdmin):
                                           payee_field='payee')
 
 
+class PayRunAdmin(admin.ModelAdmin):
+    list_display = ('payee', 'month', 'year', 'status')
+    list_filter = ('status', 'month', 'year')
+    search_fields = ('status', 'month', 'year')
+
+
 admin.site.register(TDS)
 admin.site.register(Payee, PayeeAdmin)
 admin.site.register(Payment, PaymentAdmin)
@@ -63,3 +69,4 @@ admin.site.register(BankDetails, BankDetailsAdmin)
 admin.site.register(BankDetailsAck)
 admin.site.register(PayRecordRegister)
 admin.site.register(PayRecord, PayRecordAdmin)
+admin.site.register(PayRun, PayRunAdmin)
