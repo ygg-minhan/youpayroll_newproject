@@ -19,6 +19,10 @@ class TDS(models.Model):
                                       unique=True)
     tds_percentage = models.FloatField()
 
+    class Meta:
+        verbose_name = _("Tax Deducted at Source")
+        verbose_name_plural = _("Tax Deducted at Source")
+
     def __str__(self):
         return self.tds_legal_name
 
@@ -44,6 +48,10 @@ class Payee(models.Model):
     date_of_joining = models.CharField(max_length=50, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
 
+    class Meta:
+        verbose_name = _("Payee")
+        verbose_name_plural = _("Payees")
+
     def __str__(self):
         if self.full_name is not None:
             return self.full_name
@@ -62,6 +70,10 @@ class Payment(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     label = models.CharField(max_length=50)
     payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = _("Payment")
+        verbose_name_plural = _("Payments")
 
     def __str__(self):
         return self.label
@@ -83,6 +95,10 @@ class BankDetails(models.Model):
     swift_code = models.CharField(max_length=100, null=True, blank=True)
     branch_address = models.TextField(null=True, blank=True)
     payee_acknowledgement = models.BooleanField(default=False, editable=False)
+
+    class Meta:
+        verbose_name = _("Bank Detail")
+        verbose_name_plural = _("Bank Details")
 
     def __str__(self):
         return self.account_holder_name
@@ -126,13 +142,15 @@ class PayRecordRegister(models.Model):
     branch_address = models.TextField(null=True, blank=True)
     tds_percentage = models.FloatField(null=True, blank=True)
 
+    class Meta:
+        unique_together = ('payee', 'month')
+        verbose_name = _("Pay Record Register")
+        verbose_name_plural = _("Pay Record Registers")
+
     def __str__(self):
         if self.payee.full_name is not None:
             return self.payee.full_name
         return self.payee.hrm_id
-
-    class Meta:
-        unique_together = ('payee', 'month')
 
 
 auditlog.register(PayRecordRegister)
@@ -148,13 +166,15 @@ class PayRecord(models.Model):
     pay_register = models.ForeignKey(PayRecordRegister,
                                      on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ('payee', 'month')
+        verbose_name = _("Pay Record")
+        verbose_name_plural = _("Pay Records")
+
     def __str__(self):
         if self.payee.full_name is not None:
             return self.payee.full_name
         return self.payee.hrm_id
-
-    class Meta:
-        unique_together = ('payee', 'month')
 
 
 auditlog.register(PayRecord)
@@ -179,6 +199,10 @@ class BankDetailsAck(models.Model):
                                                      "mistaken areas found "
                                                      "in the bank details.")
 
+    class Meta:
+        verbose_name = _("Bank Detail Acknowledgement")
+        verbose_name_plural = _("Bank Detail Acknowledgements")
+
     def __str__(self):
         return self.payee.hrm_id
 
@@ -194,31 +218,26 @@ class PayRunStatusChoices(models.TextChoices):
 
 class PayRun(models.Model):
     """
-    Model to store and verify monthly payment details for payees.
-
     This model keeps track of payment details for each month before
     processing payments.
     Payments are only made to payees who are active and have
     acknowledged their bank details.
     """
+    uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     month = models.IntegerField(choices=MONTH_CHOICES)
     year = models.IntegerField()
     status = models.CharField(max_length=20,
                               choices=PayRunStatusChoices.choices,
                               default=PayRunStatusChoices.DUE)
-    tds_percentage = models.FloatField()
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
-
-    def __str__(self):
-        if self.payee.full_name is not None:
-            return (f"{self.payee.full_name} - {self.get_month_display()} "
-                    f"{self.year} -{self.get_status_display()}")
-        return (f"{self.payee.hrm_id} - {self.get_month_display()} "
-                f"{self.year} - {self.get_status_display()}")
 
     class Meta:
-        unique_together = ('payee', 'month', 'year')
+        unique_together = ('month', 'year')
+        verbose_name = _("Pay Run")
+        verbose_name_plural = _("Pay Runs")
+
+    def __str__(self):
+        return (f"{self.get_month_display()} {self.year} - "
+                f"{self.get_status_display()}")
 
 
 auditlog.register(PayRun)

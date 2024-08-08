@@ -57,7 +57,7 @@ class PayRecordAdmin(admin.ModelAdmin):
 
 
 class PayRunAdmin(admin.ModelAdmin):
-    list_display = ('payee', 'month', 'year', 'status')
+    list_display = ('month', 'year', 'status')
     list_filter = ('status', 'month', 'year')
     search_fields = ('status', 'month', 'year')
 
