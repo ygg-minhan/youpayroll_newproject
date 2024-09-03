@@ -1,7 +1,7 @@
 import logging
 from celery import shared_task
 from .models import Payee
-from zohopeople.utils import get_employees_details
+from zohopeople.utils import get_payees_details
 
 # For getting the named logger
 logger = logging.getLogger('celery_debug')
@@ -12,7 +12,7 @@ logger = logging.getLogger('celery_debug')
 def fetch_details(payee_id):
     # Calling the function get_employee_details and return response
     try:
-        response_data = get_employees_details(payee_id).json()
+        response_data = get_payees_details(payee_id).json()
         response_data_list = response_data["response"]["result"][0]
     except Exception as e:
         logger.warning(e)

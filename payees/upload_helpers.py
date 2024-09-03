@@ -14,10 +14,10 @@ def validate_image(file):
 
 def user_directory_path(instance, filename):
     # File will be uploaded to
-    # MEDIA_ROOT/uploads/employees/bank-acknowledgement/user_<hrm_id
+    # MEDIA_ROOT/uploads/payees/bank-acknowledgement/user_<hrm_id
     # >/<filename>
     base_filename, file_extension = os.path.splitext(filename)
     timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
     safe_filename = f"{base_filename}_{timestamp}{file_extension}"
-    return f"uploads/employees/bank-acknowledgement/user_" \
+    return f"uploads/payees/bank-acknowledgement/user_" \
            f"{instance.payee.hrm_id}/{safe_filename}"

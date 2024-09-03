@@ -1,9 +1,9 @@
 from django.apps import AppConfig
 
 
-class EmployeesConfig(AppConfig):
+class PayeesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'employees'
+    name = 'payees'
 
     def ready(self):
-        import employees.signals
+        import payees.signals

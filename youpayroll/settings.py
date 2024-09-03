@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'employees',
+    'payees',
     'zohopeople',
     'auditlog',
     'django_celery_results',
@@ -146,7 +146,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIAFILES_LOCATION = 'media'
 MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
-DEFAULT_FILE_STORAGE = 'employees.storage_backends.MediaStorage'
+DEFAULT_FILE_STORAGE = 'payees.storage_backends.MediaStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
