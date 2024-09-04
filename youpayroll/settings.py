@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'auditlog',
     'django_celery_results',
     'storages',
+    'payroll',
 ]
 
 MIDDLEWARE = [
