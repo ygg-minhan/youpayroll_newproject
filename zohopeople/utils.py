@@ -68,10 +68,10 @@ def get_emp_access_token():
     return latest_token_obj.access_token
 
 
-# Function to call zoho people API to get the details of employees
-def get_employees_details(emp_id):
+# Function to call zoho people API to get the details of payees
+def get_payees_details(emp_id):
     """
-    Calls the zoho people API to get the details of employees
+    Calls the zoho people API to get the details of payees
     """
     access_token = get_emp_access_token()
     url = ZP_EMPLOYEE_DETAILS_API
@@ -92,7 +92,7 @@ def get_employees_details(emp_id):
 
     elif response.status_code == 401:
         generate_access_token()
-        response = get_employees_details(emp_id)
+        response = get_payees_details(emp_id)
         if response.status_code == 200:
             return response
 

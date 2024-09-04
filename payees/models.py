@@ -1,22 +1,29 @@
 import uuid
+from django.utils.translation import gettext_lazy as _
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.contrib.auth.models import User
 from auditlog.registry import auditlog
-from employees.upload_helpers import user_directory_path, validate_image
-from employees.constants import (MONTH_CHOICES, TDS_LEGAL_NAME_CHOICES,
-                                 STATUS_CHOICES, PAYEE_STATUS_HELP_TEXT)
+from .upload_helpers import user_directory_path, validate_image
+from .constants import (MONTH_CHOICES, TDS_LEGAL_NAME_CHOICES,
+                        STATUS_CHOICES, PAYEE_STATUS_HELP_TEXT)
+import datetime
 
 
 # Create your models here.
 
-# Model containing Tax Deducted at Source information
 class TDS(models.Model):
+    """ Model containing Tax Deducted at Source information """
+
     uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     tds_legal_name = models.CharField(max_length=50,
                                       choices=TDS_LEGAL_NAME_CHOICES,
                                       unique=True)
     tds_percentage = models.FloatField()
+
+    class Meta:
+        verbose_name = _("Tax Deducted at Source")
+        verbose_name_plural = _("Tax Deducted at Source")
 
     def __str__(self):
         return self.tds_legal_name
@@ -25,8 +32,9 @@ class TDS(models.Model):
 auditlog.register(TDS)
 
 
-# Stores the information of the Payee in the database
 class Payee(models.Model):
+    """ Stores the information of the Payee in the database """
+
     is_deleted = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES,
                               default='active',
@@ -43,6 +51,10 @@ class Payee(models.Model):
     date_of_joining = models.CharField(max_length=50, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
 
+    class Meta:
+        verbose_name = _("Payee")
+        verbose_name_plural = _("Payees")
+
     def __str__(self):
         if self.full_name is not None:
             return self.full_name
@@ -56,20 +68,9 @@ class Payee(models.Model):
 auditlog.register(Payee)
 
 
-class Payment(models.Model):
-    uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    label = models.CharField(max_length=50)
-    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.label
-
-
-auditlog.register(Payment)
-
-
 class BankDetails(models.Model):
+    """ Stores the information of the Payee Bank Account details """
+
     uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
     bank_name = models.CharField(max_length=100, null=True, blank=True)
@@ -83,6 +84,10 @@ class BankDetails(models.Model):
     branch_address = models.TextField(null=True, blank=True)
     payee_acknowledgement = models.BooleanField(default=False, editable=False)
 
+    class Meta:
+        verbose_name = _("Bank Detail")
+        verbose_name_plural = _("Bank Details")
+
     def __str__(self):
         return self.account_holder_name
 
@@ -90,14 +95,14 @@ class BankDetails(models.Model):
         if self.pk:
             current_instance = BankDetails.objects.get(pk=self.pk)
             if (self.payee != current_instance.payee or
-                self.bank_name != current_instance.bank_name or
-                self.account_no != current_instance.account_no or
-                self.account_holder_name !=
+                    self.bank_name != current_instance.bank_name or
+                    self.account_no != current_instance.account_no or
+                    self.account_holder_name !=
                     current_instance.account_holder_name or
-                self.account_type != current_instance.account_type or
-                self.ifsc_code != current_instance.ifsc_code or
-                self.micr_code != current_instance.micr_code or
-                self.swift_code != current_instance.swift_code or
+                    self.account_type != current_instance.account_type or
+                    self.ifsc_code != current_instance.ifsc_code or
+                    self.micr_code != current_instance.micr_code or
+                    self.swift_code != current_instance.swift_code or
                     self.branch_address !=
                     current_instance.branch_address):
                 self.payee_acknowledgement = False
@@ -107,60 +112,9 @@ class BankDetails(models.Model):
 auditlog.register(BankDetails)
 
 
-# Stores the details of amount paid to each tds type and their account details
-class PayRecordRegister(models.Model):
-    record_created = models.DateTimeField(auto_now_add=True)
-    month = models.IntegerField(choices=MONTH_CHOICES)
-    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True,
-                                 blank=True)
-    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
-    bank_name = models.CharField(max_length=100, null=True, blank=True)
-    account_number = models.CharField(null=True, blank=True, max_length=16)
-    account_holder_name = models.CharField(max_length=100, null=True,
-                                           blank=True)
-    account_type = models.CharField(max_length=10, null=True, blank=True)
-    ifsc_code = models.CharField(max_length=100, null=True, blank=True)
-    micr_code = models.CharField(max_length=100, null=True, blank=True)
-    swift_code = models.CharField(max_length=100, null=True, blank=True)
-    branch_address = models.TextField(null=True, blank=True)
-    tds_percentage = models.FloatField(null=True, blank=True)
-
-    def __str__(self):
-        if self.payee.full_name is not None:
-            return self.payee.full_name
-        return self.payee.hrm_id
-
-    class Meta:
-        unique_together = ('payee', 'month')
-
-
-auditlog.register(PayRecordRegister)
-
-
-class PayRecord(models.Model):
-    record_created = models.DateTimeField(auto_now_add=True)
-    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
-    month = models.IntegerField(choices=MONTH_CHOICES)
-    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True,
-                                 blank=True)
-    bank_account = models.CharField(null=True, blank=True, max_length=16)
-    pay_register = models.ForeignKey(PayRecordRegister,
-                                     on_delete=models.CASCADE)
-
-    def __str__(self):
-        if self.payee.full_name is not None:
-            return self.payee.full_name
-        return self.payee.hrm_id
-
-    class Meta:
-        unique_together = ('payee', 'month')
-
-
-auditlog.register(PayRecord)
-
-
-# Stores the bank-acknowledgement file uploaded by the payee
 class BankDetailsAck(models.Model):
+    """ Stores the bank-acknowledgement file uploaded by the payee """
+
     payee = models.ForeignKey(Payee, on_delete=models.CASCADE,
                               related_name='bank_acknowledgement')
     uploaded_date = models.DateTimeField(auto_now_add=True)
@@ -170,16 +124,22 @@ class BankDetailsAck(models.Model):
                                                        allowed_extensions=[
                                                            'jpg', 'jpeg',
                                                            'png'])])
-    # Indicates the approval status of the bank details. True if the bank
-    # details are approved, False if rejected.
+
+    """Indicates the approval status of the bank details. True if the bank
+    details are approved, False if rejected."""
+
     is_approved = models.BooleanField(default=False)
     correction_comments = models.TextField(blank=True, null=True,
                                            help_text="Please specify any "
                                                      "mistaken areas found "
                                                      "in the bank details.")
 
+    class Meta:
+        verbose_name = _("Bank Detail Acknowledgement")
+        verbose_name_plural = _("Bank Detail Acknowledgements")
+
     def __str__(self):
-        return self.payee.hrm_id
+        return self.payee.full_name
 
 
 auditlog.register(BankDetailsAck)

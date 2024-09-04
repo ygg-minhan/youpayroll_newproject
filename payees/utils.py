@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
-from employees.models import Payee
-from employees.constants import RESTRICTED_GROUPS
+from .models import Payee
+from .constants import RESTRICTED_GROUPS
 
 
 def restrict_queryset_by_group(qs, user, payee_field=None):
