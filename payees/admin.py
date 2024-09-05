@@ -37,7 +37,7 @@ class BankDetailsAdmin(admin.ModelAdmin):
                                           payee_field='payee')
 
 
-admin.site.register(TDS)
+
 admin.site.register(Payee, PayeeAdmin)
 admin.site.register(BankDetails, BankDetailsAdmin)
 admin.site.register(BankDetailsAck)
