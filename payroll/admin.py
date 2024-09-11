@@ -73,7 +73,10 @@ class PayRunAdmin(admin.ModelAdmin):
 
 
 class PayRecordRegisterAdmin(admin.ModelAdmin):
-    readonly_fields = ('payee', 'amount', 'pay_run', 'tds_percentage')
+    readonly_fields = ('payee', 'amount', 'pay_run', 'tds_percentage',
+                       'bank_name', 'account_number', 'account_holder_name',
+                       'account_type', 'ifsc_code', 'micr_code',
+                       'swift_code', 'branch_address')
     list_filter = ['pay_run__status', 'pay_run__month', 'pay_run__year']
 
 
