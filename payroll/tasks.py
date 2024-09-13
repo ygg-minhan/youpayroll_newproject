@@ -21,7 +21,6 @@ def run_pay_run_task(payrun_id):
 
     pay_run.status = PayRunStatusChoices.IN_PROGRESS
     pay_run.save()
-
     logger.info('PayRun status updated to: %s', pay_run.status)
 
     for payee in payees:
@@ -29,12 +28,13 @@ def run_pay_run_task(payrun_id):
 
         bank_details = BankDetails.objects.get(payee=payee)
 
-        total_amount = Payment.objects.filter(payee=payee)
+        total_amount = (Payment.objects.filter(payee=payee).order_by
+                        ('-id').first().amount)
 
         # Create PayRecordRegister entry
         PayRecordRegister.objects.create(
             pay_run=pay_run,
-            amount=total_amount.amount,
+            amount=total_amount,
             payee=payee,
             bank_name=bank_details.bank_name,
             account_number=bank_details.account_no,
@@ -47,8 +47,8 @@ def run_pay_run_task(payrun_id):
             tds_percentage=payee.tds_type.tds_percentage if payee.tds_type else None,
         )
 
-        pay_run.status = PayRunStatusChoices.COMPLETED
-        pay_run.save()
-        logger.info('PayRecordRegister created for payee: %s', payee)
+    pay_run.status = PayRunStatusChoices.COMPLETED
+    pay_run.save()
+    logger.info('PayRecordRegister created for payee: %s', )
 
 
