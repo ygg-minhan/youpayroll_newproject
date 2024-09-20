@@ -1,13 +1,15 @@
 import logging
 
 from django.contrib import admin
+from django.shortcuts import redirect
+from django.urls import reverse
 
-from .models import Payment, PayRecordRegister, PayRun, PayRunStatusChoices
 from payees.utils import restrict_queryset_by_group
+from .models import Payment, PayRecordRegister, PayRun
 from .alerts import (approve_payrun_action, reject_payrun_action,
-                     run_payrun_action, check_previous_month_payrun,
-                     check_if_can_create_new_payrun, verify_existing_payrun,
-                     is_payrun_rejected_or_exists)
+                     run_payrun_action, check_payrun_status,
+                     set_readonly_fields)
+from .forms import PayRunForm
 
 logger = logging.getLogger(__name__)
 
@@ -24,36 +26,27 @@ class PaymentAdmin(admin.ModelAdmin):
 
 
 class PayRunAdmin(admin.ModelAdmin):
-    list_display = ('month', 'year', 'status', 'created_by')
+    list_display = ('get_month_name', 'year', 'status', 'created_by')
     list_filter = ('status', 'month', 'year')
-    search_fields = ('status', 'month', 'year')
+    search_fields = ('status', 'get_month_name', 'year')
     readonly_fields = ('status', 'created_at')
     ordering = ['-created_at']
-    actions = ['run_payrun', 'approve_payrun', 'reject_payrun' ]
+    actions = ['run_payrun', 'approve_payrun', 'reject_payrun']
+    form = PayRunForm
+
+    def add_view(self, request, form_url='', extra_context=None):
+        if check_payrun_status(request):
+            return redirect(reverse('admin:payroll_payrun_changelist'))
+        return super().add_view(request, form_url, extra_context)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        set_readonly_fields(form, obj)
+        return form
 
     def save_model(self, request, obj, form, change):
-        """
-        To handle the creation of a new payrun entry when there is no
-        existing entry or if the existing entry has a status of Rejected.
-        """
-        if not obj.pk:
-            if is_payrun_rejected_or_exists(self, obj):
-                obj.created_by = request.user
-                obj.status = PayRunStatusChoices.DUE
-                super().save_model(request, obj, form, change)
-                return
-
-            if not verify_existing_payrun(self, obj, request):
-                return
-
-            if not check_previous_month_payrun(self, obj, request):
-                return
-
-            if not check_if_can_create_new_payrun(self, obj, request):
-                return
-
+        if change == False:
             obj.created_by = request.user
-
         super().save_model(request, obj, form, change)
 
     def approve_payrun(self, request, queryset):

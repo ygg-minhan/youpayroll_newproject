@@ -2,7 +2,7 @@ from django.contrib import messages
 
 from .models import PayRun, PayRunStatusChoices, Payee
 from .tasks import run_pay_run_task
-from .utils import check_single_selection, check_latest_payrun
+from .utils import check_single_payrun_selection, check_latest_payrun
 
 
 def approve_payrun_action(modeladmin, request, queryset):
@@ -12,11 +12,11 @@ def approve_payrun_action(modeladmin, request, queryset):
     selected_payrun = queryset.first()
     latest_payrun = PayRun.objects.all().last()
 
-    if not check_single_selection(queryset, modeladmin, request):
+    if check_single_payrun_selection(queryset, modeladmin, request) == False:
         return
 
-    if not check_latest_payrun(modeladmin, request, selected_payrun,
-                               latest_payrun):
+    if check_latest_payrun(modeladmin, request, selected_payrun,
+                           latest_payrun) == False:
         return
 
     if latest_payrun.status == PayRunStatusChoices.COMPLETED:
@@ -28,9 +28,7 @@ def approve_payrun_action(modeladmin, request, queryset):
     else:
         modeladmin.message_user(request,
                                 "Entries can only be approved if their status "
-                                "is 'Completed'. To update the status and "
-                                "enable approval, please run the "
-                                "pay run process.", level=messages.ERROR)
+                                "is 'Completed'.", level=messages.ERROR)
 
 
 def reject_payrun_action(modeladmin, request, queryset):
@@ -40,11 +38,11 @@ def reject_payrun_action(modeladmin, request, queryset):
     selected_payrun = queryset.first()
     latest_payrun = PayRun.objects.all().last()
 
-    if not check_single_selection(queryset, modeladmin, request):
+    if check_single_payrun_selection(queryset, modeladmin, request) == False:
         return
 
-    if not check_latest_payrun(modeladmin, request, selected_payrun,
-                               latest_payrun):
+    if check_latest_payrun(modeladmin, request, selected_payrun,
+                           latest_payrun) == False:
         return
 
     if (latest_payrun.status == PayRunStatusChoices.COMPLETED or
@@ -58,9 +56,7 @@ def reject_payrun_action(modeladmin, request, queryset):
     else:
         modeladmin.message_user(request,
                                 "Entries can only be rejected if their status "
-                                "is 'Completed' or 'Approved.' To update the "
-                                "status and enable rejection, please run the "
-                                "pay run process.",
+                                "is 'Completed' or 'Approved.' ",
                                 level=messages.ERROR)
 
 
@@ -71,11 +67,11 @@ def run_payrun_action(modeladmin, request, queryset):
     latest_payrun = PayRun.objects.all().last()
     selected_payrun = queryset.first()
 
-    if not check_single_selection(queryset, modeladmin, request):
+    if check_single_payrun_selection(queryset, modeladmin, request) == False:
         return
 
-    if not check_latest_payrun(modeladmin, request, selected_payrun,
-                               latest_payrun):
+    if check_latest_payrun(modeladmin, request, selected_payrun,
+                           latest_payrun) == False:
         return
 
     if latest_payrun.status == PayRunStatusChoices.APPROVED:
@@ -124,100 +120,35 @@ def run_payrun_action(modeladmin, request, queryset):
                                     level=messages.SUCCESS)
 
 
-def is_payrun_rejected_or_exists(self, obj):
+def check_payrun_status(request):
     """
-    Checks whether the latest payrun entry has been rejected or if there are
-    no existing payrun entries in the database.
+    Checks the status of the latest PayRun instance. If the status is DUE,
+    COMPLETED, or IN_PROGRESS, it displays an error message and returns True,
+    indicating that a new PayRun cannot be created until the existing one is
+    finished. Otherwise, it returns False.
     """
-    if not PayRun.objects.exists():
-        return True
+    latest_payrun = PayRun.objects.order_by('-created_at').first()
+    if latest_payrun:
+        conflicting_statuses = [
+            PayRunStatusChoices.DUE,
+            PayRunStatusChoices.COMPLETED,
+            PayRunStatusChoices.IN_PROGRESS
+        ]
+        if latest_payrun.status in conflicting_statuses:
+            messages.error(request, (
+                f"A Pay Run already exists with the status "
+                f"'{latest_payrun.get_status_display()}'. "
+                "Please finish the existing Pay Run before creating a new one."
+            ))
+            return True
+    return False
 
-    latest_payrun = PayRun.objects.all().last()
-    return (latest_payrun.status == PayRunStatusChoices.REJECTED and
-            latest_payrun.month == obj.month and
-            latest_payrun.year == obj.year)
 
-
-def verify_existing_payrun(self, obj, request):
+def set_readonly_fields(form, obj):
     """
-    Checks whether a payrun entry already exists for a given month and year
-    and verifies the status of the latest payrun entry. If an existing payrun
-    is found that is not rejected, it sends an error message to the user.
+    sets the month and year fields of the form to read-only if the obj is
+    not None, preventing edits to these fields for existing PayRun instances.
     """
-    existing_pay_runs = PayRun.objects.filter(
-        month=obj.month, year=obj.year
-    ).order_by('-id')
-
-    if existing_pay_runs.exists():
-        latest_payrun = existing_pay_runs.first()
-        if latest_payrun.status != PayRunStatusChoices.REJECTED:
-            messages.set_level(request, messages.ERROR)
-            self.message_user(request,
-                              f"Error: A Pay Run already exists for "
-                              f"{latest_payrun.get_month_display()} - "
-                              f"{latest_payrun.year} with status"
-                              f" {latest_payrun.status}.",
-                              messages.ERROR)
-            return False
-    return True
-
-
-def check_previous_month_payrun(self, obj, request):
-    """
-    Verifies the existence of a payrun entry for the previous month before
-    allowing the creation of a new payrun entry for the current month.
-    """
-    previous_month = obj.month - 1
-    previous_year = obj.year
-    if previous_month == 0:
-        previous_month = 12
-        previous_year -= 1
-
-    previous_pay_run_exists = PayRun.objects.filter(
-        month=previous_month, year=previous_year
-    ).exists()
-
-    if not previous_pay_run_exists:
-        messages.set_level(request, messages.ERROR)
-        self.message_user(request,
-                          f"A Pay Run for the previous month "
-                          f"{previous_month} / {previous_year} "
-                          f"must exist before creating a new one.",
-                          messages.ERROR)
-        return False
-    return True
-
-
-def check_if_can_create_new_payrun(self, obj, request):
-    """
-    Determines whether a new payrun entry can be created based on the status
-    of the latest payrun entry and its relationship to the previous month.
-    """
-    latest_payrun = PayRun.objects.all().last()
-    previous_month = obj.month - 1
-    previous_year = obj.year
-    if previous_month == 0:
-        previous_month = 12
-        previous_year -= 1
-
-    if latest_payrun.status == PayRunStatusChoices.REJECTED:
-        if previous_month != obj.month or previous_year != obj.year:
-            messages.set_level(request, messages.ERROR)
-            self.message_user(request,
-                              f"A Pay Run for the previous "
-                              f"month {previous_month} / {previous_year} "
-                              f"was rejected. You can only create a "
-                              f"new Pay Run for the rejected month.",
-                              messages.ERROR)
-            return False
-    elif (latest_payrun.status == PayRunStatusChoices.DUE or
-          latest_payrun.status == PayRunStatusChoices.COMPLETED):
-        messages.set_level(request, messages.ERROR)
-        self.message_user(request,
-                          f"There's already a Pay Run for "
-                          f"{previous_month} / {previous_year}. "
-                          f"Please 'approve' or 'reject'  the existing "
-                          f"Pay Run before creating a new one.",
-                          messages.ERROR)
-        return False
-    return True
+    if obj is not None:
+        form.base_fields['month'].widget.attrs['readonly'] = 'readonly'
+        form.base_fields['year'].widget.attrs['readonly'] = 'readonly'

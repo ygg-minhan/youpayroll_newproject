@@ -1,7 +1,7 @@
 from django.contrib import messages
 
 
-def check_single_selection(queryset, modeladmin, request):
+def check_single_payrun_selection(queryset, modeladmin, request):
     """
    Checks if exactly one item is selected in the queryset.
    Displays an error message if not.

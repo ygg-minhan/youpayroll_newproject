@@ -1,5 +1,4 @@
 import uuid
-import datetime
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -8,8 +7,8 @@ from django.contrib.auth.models import User
 
 from auditlog.registry import auditlog
 
-from payees.models import Payee
 from payees.constants import MONTH_CHOICES
+from payees.models import Payee
 
 
 # Create your models here.
@@ -49,8 +48,8 @@ class PayRun(models.Model):
     acknowledged their bank details.
     """
     uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
-    month = models.IntegerField(choices=MONTH_CHOICES)
-    year = models.IntegerField(default=datetime.date.today().year)
+    month = models.IntegerField()
+    year = models.IntegerField()
     status = models.CharField(max_length=20,
                               choices=PayRunStatusChoices.choices,
                               default=PayRunStatusChoices.DUE)
@@ -62,8 +61,12 @@ class PayRun(models.Model):
         verbose_name = _("Pay Run")
         verbose_name_plural = _("Pay Runs")
 
+    def get_month_name(self):
+        month_names = dict(MONTH_CHOICES)
+        return month_names.get(self.month)
+
     def __str__(self):
-        return (f"{self.get_month_display()} {self.year} - "
+        return (f"{self.get_month_name()} {self.year} - "
                 f"{self.get_status_display()}")
 
 
@@ -99,7 +102,7 @@ class PayRecordRegister(models.Model):
         verbose_name_plural = _("Pay Record Registers")
 
     def __str__(self):
-        return (f"{self.payee} - {self.pay_run.get_month_display()} / "
+        return (f"{self.payee} - {self.pay_run.month} / "
                 f"{self.pay_run.year}  -  {self.pay_run.get_status_display()}")
 
 
