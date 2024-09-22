@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 
 from auditlog.registry import auditlog
 
-from payees.constants import MONTH_CHOICES
+from .utils import get_month_name
 from payees.models import Payee
 
 
@@ -19,7 +19,7 @@ class Payment(models.Model):
     uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     label = models.CharField(max_length=50)
-    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
+    payee = models.OneToOneField(Payee, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = _("Payment")
@@ -61,12 +61,11 @@ class PayRun(models.Model):
         verbose_name = _("Pay Run")
         verbose_name_plural = _("Pay Runs")
 
-    def get_month_name(self):
-        month_names = dict(MONTH_CHOICES)
-        return month_names.get(self.month)
+    def display_month_name(self):
+        return get_month_name(self.month)
 
     def __str__(self):
-        return (f"{self.get_month_name()} {self.year} - "
+        return (f"{self.display_month_name()} {self.year} - "
                 f"{self.get_status_display()}")
 
 

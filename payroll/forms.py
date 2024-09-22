@@ -42,7 +42,7 @@ class PayRunForm(forms.ModelForm):
                     self.fields['month'].initial = latest_payrun.month
                     self.fields['year'].initial = latest_payrun.year
 
-                    #  # Make the month and year fields read-only
+                    # Make the month and year fields read-only
                     self.fields['month'].widget.attrs['readonly'] = 'readonly'
                     self.fields['year'].widget.attrs['readonly'] = 'readonly'
 

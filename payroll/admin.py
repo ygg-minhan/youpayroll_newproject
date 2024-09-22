@@ -7,7 +7,7 @@ from django.urls import reverse
 from payees.utils import restrict_queryset_by_group
 from .models import Payment, PayRecordRegister, PayRun
 from .alerts import (approve_payrun_action, reject_payrun_action,
-                     run_payrun_action, check_payrun_status,
+                     run_payrun_action, is_payrun_exists,
                      set_readonly_fields)
 from .forms import PayRunForm
 
@@ -26,7 +26,7 @@ class PaymentAdmin(admin.ModelAdmin):
 
 
 class PayRunAdmin(admin.ModelAdmin):
-    list_display = ('get_month_name', 'year', 'status', 'created_by')
+    list_display = ('display_month_name', 'year', 'status', 'created_by')
     list_filter = ('status', 'month', 'year')
     search_fields = ('status', 'get_month_name', 'year')
     readonly_fields = ('status', 'created_at')
@@ -35,7 +35,7 @@ class PayRunAdmin(admin.ModelAdmin):
     form = PayRunForm
 
     def add_view(self, request, form_url='', extra_context=None):
-        if check_payrun_status(request):
+        if is_payrun_exists(request):
             return redirect(reverse('admin:payroll_payrun_changelist'))
         return super().add_view(request, form_url, extra_context)
 

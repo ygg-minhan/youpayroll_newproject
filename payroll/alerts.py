@@ -9,8 +9,11 @@ def approve_payrun_action(modeladmin, request, queryset):
     """
     Approve the selected payrun entry.
     """
+    # Retrieves the first PayRun from the queryset or None if empty.
     selected_payrun = queryset.first()
-    latest_payrun = PayRun.objects.all().last()
+
+    # Retrieves the most recent PayRun or None if none exist.
+    latest_payrun = PayRun.objects.last()
 
     if check_single_payrun_selection(queryset, modeladmin, request) == False:
         return
@@ -35,8 +38,11 @@ def reject_payrun_action(modeladmin, request, queryset):
     """
     Reject the selected payrun entry.
     """
+    # Retrieves the first PayRun from the queryset or None if empty.
     selected_payrun = queryset.first()
-    latest_payrun = PayRun.objects.all().last()
+
+    # Retrieves the most recent PayRun or None if none exist.
+    latest_payrun = PayRun.objects.last()
 
     if check_single_payrun_selection(queryset, modeladmin, request) == False:
         return
@@ -45,8 +51,9 @@ def reject_payrun_action(modeladmin, request, queryset):
                            latest_payrun) == False:
         return
 
-    if (latest_payrun.status == PayRunStatusChoices.COMPLETED or
-            latest_payrun.status == PayRunStatusChoices.APPROVED):
+    if latest_payrun.status in [PayRunStatusChoices.COMPLETED,
+                                PayRunStatusChoices.APPROVED,
+                                PayRunStatusChoices.DUE]:
 
         latest_payrun.status = PayRunStatusChoices.REJECTED
         latest_payrun.save()
@@ -56,7 +63,7 @@ def reject_payrun_action(modeladmin, request, queryset):
     else:
         modeladmin.message_user(request,
                                 "Entries can only be rejected if their status "
-                                "is 'Completed' or 'Approved.' ",
+                                "is 'Completed', 'Approved' or 'Due'. ",
                                 level=messages.ERROR)
 
 
@@ -64,8 +71,11 @@ def run_payrun_action(modeladmin, request, queryset):
     """
     Queue a Celery task to process the selected payrun entry.
     """
-    latest_payrun = PayRun.objects.all().last()
+    # Retrieves the first PayRun from the queryset or None if empty.
     selected_payrun = queryset.first()
+
+    # Retrieves the most recent PayRun or None if none exist.
+    latest_payrun = PayRun.objects.last()
 
     if check_single_payrun_selection(queryset, modeladmin, request) == False:
         return
@@ -101,9 +111,9 @@ def run_payrun_action(modeladmin, request, queryset):
 
         payees = Payee.objects.filter(
             status='active',
-            bankdetails__payee_acknowledgement=True).distinct()
+            bankdetails__payee_acknowledgement=True)
 
-        if not payees.exists():
+        if payees.exists() == False:
             modeladmin.message_user(request,
                                     "No active payees found with acknowledged "
                                     "bank details. Please check and try again",
@@ -120,14 +130,14 @@ def run_payrun_action(modeladmin, request, queryset):
                                     level=messages.SUCCESS)
 
 
-def check_payrun_status(request):
+def is_payrun_exists(request):
     """
     Checks the status of the latest PayRun instance. If the status is DUE,
     COMPLETED, or IN_PROGRESS, it displays an error message and returns True,
     indicating that a new PayRun cannot be created until the existing one is
     finished. Otherwise, it returns False.
     """
-    latest_payrun = PayRun.objects.order_by('-created_at').first()
+    latest_payrun = PayRun.objects.last()
     if latest_payrun:
         conflicting_statuses = [
             PayRunStatusChoices.DUE,
@@ -149,6 +159,6 @@ def set_readonly_fields(form, obj):
     sets the month and year fields of the form to read-only if the obj is
     not None, preventing edits to these fields for existing PayRun instances.
     """
-    if obj is not None:
+    if obj:
         form.base_fields['month'].widget.attrs['readonly'] = 'readonly'
         form.base_fields['year'].widget.attrs['readonly'] = 'readonly'

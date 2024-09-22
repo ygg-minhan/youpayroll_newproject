@@ -15,40 +15,51 @@ def run_pay_run_task(payrun_id):
     logger.info('Starting task with pay_run_id: %s', payrun_id)
 
     pay_run = PayRun.objects.get(id=payrun_id)
-    # Retrieve payees
-    payees = Payee.objects.filter(
-        status='active', bankdetails__payee_acknowledgement=True).distinct()
+    if pay_run.status == PayRunStatusChoices.DUE:
+        # Retrieve payees
+        payees = Payee.objects.filter(
+            status='active', bankdetails__payee_acknowledgement=True)
 
-    pay_run.status = PayRunStatusChoices.IN_PROGRESS
-    pay_run.save()
-    logger.info('PayRun status updated to: %s', pay_run.status)
+        pay_run.status = PayRunStatusChoices.IN_PROGRESS
+        pay_run.save()
+        logger.info('PayRun status updated to: %s', pay_run.status)
 
-    for payee in payees:
-        logger.info('Processing payee: %s', payee)
+        for payee in payees:
+            logger.info('Processing payee: %s', payee)
 
-        bank_details = BankDetails.objects.get(payee=payee)
+            try:
+                bank_details = BankDetails.objects.get(payee=payee)
+                total_amount = Payment.objects.get(payee=payee)
 
-        total_amount = (Payment.objects.filter(payee=payee).order_by
-                        ('-id').first().amount)
+            except BankDetails.DoesNotExist:
+                bank_details = None
+                print("Bank details not found for this payee.")
 
-        # Create PayRecordRegister entry
-        PayRecordRegister.objects.create(
-            pay_run=pay_run,
-            amount=total_amount,
-            payee=payee,
-            bank_name=bank_details.bank_name,
-            account_number=bank_details.account_no,
-            account_holder_name=bank_details.account_holder_name,
-            account_type=bank_details.account_type,
-            ifsc_code=bank_details.ifsc_code,
-            micr_code=bank_details.micr_code,
-            swift_code=bank_details.swift_code,
-            branch_address=bank_details.branch_address,
-            tds_percentage=payee.tds_type.tds_percentage if payee.tds_type else None,
-        )
+            except Payment.DoesNotExist:
+                total_amount = None
+                print("Payment not found for this payee.")
 
-    pay_run.status = PayRunStatusChoices.COMPLETED
-    pay_run.save()
-    logger.info('PayRecordRegister created for payee: %s', )
+            except Exception as e:
+                print(f"An error occurred: {str(e)}")
+
+            # Create PayRecordRegister entry
+            PayRecordRegister.objects.create(
+                pay_run=pay_run,
+                amount=total_amount.amount,
+                payee=payee,
+                bank_name=bank_details.bank_name,
+                account_number=bank_details.account_no,
+                account_holder_name=bank_details.account_holder_name,
+                account_type=bank_details.account_type,
+                ifsc_code=bank_details.ifsc_code,
+                micr_code=bank_details.micr_code,
+                swift_code=bank_details.swift_code,
+                branch_address=bank_details.branch_address,
+                tds_percentage=payee.tds_type.tds_percentage if payee.tds_type else None,
+            )
+
+        pay_run.status = PayRunStatusChoices.COMPLETED
+        pay_run.save()
+        logger.info('PayRecordRegister created for payee: %s', )
 
 
