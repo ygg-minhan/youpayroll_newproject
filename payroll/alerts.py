@@ -152,13 +152,3 @@ def is_payrun_exists(request):
             ))
             return True
     return False
-
-
-def set_readonly_fields(form, obj):
-    """
-    sets the month and year fields of the form to read-only if the obj is
-    not None, preventing edits to these fields for existing PayRun instances.
-    """
-    if obj:
-        form.base_fields['month'].widget.attrs['readonly'] = 'readonly'
-        form.base_fields['year'].widget.attrs['readonly'] = 'readonly'
