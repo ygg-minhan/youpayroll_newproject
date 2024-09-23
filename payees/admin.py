@@ -1,6 +1,6 @@
 import logging
 from django.contrib import admin
-from .models import (Payee, BankDetails, BankDetailsAck, TDS)
+from .models import (Payee, BankDetails, BankDetailsAck)
 from .utils import restrict_queryset_by_group
 from .tasks import fetch_details
 
@@ -37,7 +37,10 @@ class BankDetailsAdmin(admin.ModelAdmin):
                                           payee_field='payee')
 
 
+class BankDetailsAckAdmin(admin.ModelAdmin):
+    list_display = ['payee', 'uploaded_date']
+
 
 admin.site.register(Payee, PayeeAdmin)
 admin.site.register(BankDetails, BankDetailsAdmin)
-admin.site.register(BankDetailsAck)
+admin.site.register(BankDetailsAck,BankDetailsAckAdmin)

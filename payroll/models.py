@@ -1,5 +1,4 @@
 import uuid
-import datetime
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -8,8 +7,8 @@ from django.contrib.auth.models import User
 
 from auditlog.registry import auditlog
 
+from .utils import get_month_name
 from payees.models import Payee
-from payees.constants import MONTH_CHOICES
 
 
 # Create your models here.
@@ -20,7 +19,7 @@ class Payment(models.Model):
     uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     label = models.CharField(max_length=50)
-    payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
+    payee = models.OneToOneField(Payee, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = _("Payment")
@@ -49,19 +48,24 @@ class PayRun(models.Model):
     acknowledged their bank details.
     """
     uuid = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
-    month = models.IntegerField(choices=MONTH_CHOICES)
-    year = models.IntegerField(default=datetime.date.today().year)
+    month = models.IntegerField()
+    year = models.IntegerField()
     status = models.CharField(max_length=20,
-                              choices=PayRunStatusChoices.choices, default=PayRunStatusChoices.DUE)
+                              choices=PayRunStatusChoices.choices,
+                              default=PayRunStatusChoices.DUE)
     created_at = models.DateTimeField(default=timezone.now)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, editable=False, null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE,
+                                   editable=False, null=True, blank=True)
 
     class Meta:
         verbose_name = _("Pay Run")
         verbose_name_plural = _("Pay Runs")
 
+    def display_month_name(self):
+        return get_month_name(self.month)
+
     def __str__(self):
-        return (f"{self.get_month_display()} {self.year} - "
+        return (f"{self.display_month_name()} {self.year} - "
                 f"{self.get_status_display()}")
 
 
@@ -69,11 +73,12 @@ auditlog.register(PayRun)
 
 
 class PayRecordRegister(models.Model):
-    """ Stores the details of amount paid to each tds type and their account details
-        after each successful Pay run """
+    """ Stores the details of amount paid to each tds type and their account
+    details after each successful Pay run """
 
     record_created = models.DateTimeField(auto_now_add=True)
-    pay_run = models.ForeignKey(PayRun, on_delete=models.CASCADE, null=True, blank=True)
+    pay_run = models.ForeignKey(PayRun, on_delete=models.CASCADE, null=True,
+                                blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True,
                                  blank=True)
     payee = models.ForeignKey(Payee, on_delete=models.CASCADE)
@@ -96,7 +101,8 @@ class PayRecordRegister(models.Model):
         verbose_name_plural = _("Pay Record Registers")
 
     def __str__(self):
-        return f"{self.payee} - {self.pay_run.get_month_display()} / {self.pay_run.year}  -  {self.pay_run.get_status_display()}"
+        return (f"{self.payee} - {self.pay_run.month} / "
+                f"{self.pay_run.year}  -  {self.pay_run.get_status_display()}")
 
 
 auditlog.register(PayRecordRegister)
