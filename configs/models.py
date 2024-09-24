@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 
 from auditlog.registry import auditlog
 from payees.constants import TDS_LEGAL_NAME_CHOICES
+from .constants import OPERATION_CHOICES
 
 
 # Create your models here.
@@ -26,3 +27,17 @@ class TDS(models.Model):
 
 
 auditlog.register(TDS)
+
+
+class Component(models.Model):
+    """
+    Model contains Components name and it's corresponding operations
+    """
+    component_name = models.CharField(max_length=100)
+    operation = models.CharField(max_length=10, choices=OPERATION_CHOICES)  # 'sum' or 'subtract'
+
+    def __str__(self):
+        return self.component_name
+
+
+auditlog.register(Component)

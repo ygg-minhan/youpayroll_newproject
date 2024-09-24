@@ -56,6 +56,7 @@ def run_pay_run_task(payrun_id):
                 swift_code=bank_details.swift_code,
                 branch_address=bank_details.branch_address,
                 tds_percentage=payee.tds_type.tds_percentage if payee.tds_type else None,
+                gross_amount=total_amount.amount,
             )
 
         pay_run.status = PayRunStatusChoices.COMPLETED
