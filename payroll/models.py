@@ -104,6 +104,9 @@ class PayRecordRegister(models.Model):
         verbose_name = _("Pay Record Register")
         verbose_name_plural = _("Pay Record Registers")
 
+    def __str__(self):
+        return f"{self.payee.full_name} | {self.pay_run}"
+
 
 auditlog.register(PayRecordRegister)
 
