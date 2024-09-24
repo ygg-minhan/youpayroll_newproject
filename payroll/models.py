@@ -1,4 +1,5 @@
 import uuid
+import datetime
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -9,6 +10,7 @@ from auditlog.registry import auditlog
 
 from .utils import get_month_name
 from payees.models import Payee
+from configs.models import Component
 
 
 # Create your models here.
@@ -93,6 +95,8 @@ class PayRecordRegister(models.Model):
     swift_code = models.CharField(max_length=100, null=True, blank=True)
     branch_address = models.TextField(null=True, blank=True)
     tds_percentage = models.FloatField(null=True, blank=True)
+    gross_amount = models.DecimalField(max_digits=10, decimal_places=2,
+                                       null=True, blank=True)
 
     class Meta:
         unique_together = ('payee', 'pay_run')
@@ -100,9 +104,17 @@ class PayRecordRegister(models.Model):
         verbose_name = _("Pay Record Register")
         verbose_name_plural = _("Pay Record Registers")
 
-    def __str__(self):
-        return (f"{self.payee} - {self.pay_run.month} / "
-                f"{self.pay_run.year}  -  {self.pay_run.get_status_display()}")
-
 
 auditlog.register(PayRecordRegister)
+
+
+class ComponentValue(models.Model):
+    pay_record = models.ForeignKey(PayRecordRegister, on_delete=models.CASCADE)
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    value = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return ""
+
+
+auditlog.register(ComponentValue)
