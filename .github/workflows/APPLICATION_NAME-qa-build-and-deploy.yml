@@ -1,0 +1,133 @@
+name: QA Build & Deploy youpayroll
+run-name: Deploying QA Branch ${{ inputs.branch }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch'
+        required: true
+        type: string
+      unit_test:
+        description: 'Unit Test'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+        - false
+        - true
+      whitelabel:
+        description: 'Whitelabel'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+        - false
+        - true
+      app_db_lb_deploy:
+        description: 'Quick sight DB expose'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+        - false
+      rebuild_req:
+        description: 'Force reinstall requirement'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - false
+          - true
+      deploy_env:
+        description: 'Deploy Env'
+        required: true
+        default: 'qa'
+        type: choice
+        options:
+          - qa
+      debug:
+        description: 'Debug'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - false
+          - true
+
+  repository_dispatch:
+    types: [ "QA Build & Deploy youpayroll" ]
+    inputs:
+      branch:
+        description: 'Branch'
+        required: true
+        type: string
+      action:
+        description: 'Action'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+        - deploy
+        - renew
+        - destroy
+      unit_test:
+        description: 'Unit Test'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+        - false
+        - true
+      whitelabel:
+        description: 'Whitelabel'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+        - false
+        - true
+      app_db_lb_deploy:
+        description: 'Quick sight DB expose'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+        - false
+      rebuild_req:
+        description: 'Force reinstall requirement'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - false
+          - true
+      deploy_env:
+        description: 'Deploy Env'
+        required: true
+        default: 'qa'
+        type: choice
+        options:
+          - qa
+      debug:
+        description: 'Debug'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - false
+          - true
+
+jobs:
+  deploy:
+    name: QA
+    uses: YouGotaGift/devops-organization-actions/.github/workflows/qa-application-build-and-deploy.yml@main
+    with:
+      application_name: youpayroll
+      branch: ${{ inputs.branch || github.event.client_payload.branch }}
+      unit_test: ${{ inputs.unit_test || github.event.client_payload.unit_test || false }}
+      whitelabel: ${{ inputs.whitelabel || github.event.client_payload.whitelabel || false }}
+      app_db_lb_deploy: ${{ inputs.app_db_lb_deploy || github.event.client_payload.app_db_lb_deploy || false }}
+      debug: ${{ inputs.debug || github.event.client_payload.debug || false }}
+      rebuild_req: ${{ inputs.rebuild_req || github.event.client_payload.rebuild_req || false}}
+    secrets: inherit
