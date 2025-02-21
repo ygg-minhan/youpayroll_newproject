@@ -33,7 +33,7 @@ deployment:
       name: 'consumer-name'
       imagePullPolicy: 'Always'
       image: '459037613883.dkr.ecr.me-central-1.amazonaws.com/production/ygg/youpayroll/backend-app:[BUILD_TAG]'
-      command: '["sh", "-c", "source /vault/secrets/application.env ; source /vault/secrets/application-devops.env ; python3.11.4 manage.py consumer >> /ygag/logs/app.out.consumer-name.log 2>&1"]'
+      command: '["sh", "-c", "source /vault/secrets/application.env ; source /vault/secrets/application-devops.env ; python3.11 manage.py consumer >> /ygag/logs/app.out.consumer-name.log 2>&1"]'
       memory:
         requests: 300Mi
         limits: 400Mi
@@ -44,12 +44,7 @@ deployment:
           name: 'ygag-youpayroll-sandbox-consumer-name-logs'
         - name: 'youpayroll-app-env-volume'
           mountPath: "/vault/secrets"
-        - name: 'youpayroll-certs-sample1-volume'
-          mountPath: "/ygag/certs/sample1dir"
-        - name: 'youpayroll-certs-sample2-volume'
-          mountPath: "/ygag/certs/sample2dir"
-        - name: 'youpayroll-certs-sample-client3-volume'
-          mountPath: "/ygag/certs/sample-client3dir"
+
 
   volumes:
     - name: 'ygag-youpayroll-sandbox-consumer-name-logs'
@@ -61,24 +56,9 @@ deployment:
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpayroll-envs"
-    - name: 'youpayroll-certs-sample1-volume'
-      csi:
-        driver: secrets-store.csi.k8s.io
-        readOnly: true
-        volumeAttributes:
-          secretProviderClass: "youpayroll-certs-sample1"
-    - name: 'youpayroll-certs-sample2-volume'
-      csi:
-        driver: secrets-store.csi.k8s.io
-        readOnly: true
-        volumeAttributes:
-          secretProviderClass: "youpayroll-certs-sample2"
-    - name: 'youpayroll-certs-sample-client3-volume'
-      csi:
-        driver: secrets-store.csi.k8s.io
-        readOnly: true
-        volumeAttributes:
-          secretProviderClass: "youpayroll-certs-sample-client3"
+
+    
+    
 
   nodeSelector:
     key: 'karpenter.sh/provisioner-name'

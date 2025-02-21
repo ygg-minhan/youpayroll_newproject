@@ -2,7 +2,7 @@
 application_namespace_charts = [
   # namespace
   {
-    create_helm_release = true
+    create_helm_release = false
 
     namespace        = "youpayroll"
     create_namespace = false
