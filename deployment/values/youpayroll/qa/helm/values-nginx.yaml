@@ -89,7 +89,7 @@ deployment:
         host: 'youpayroll-[JIRA_ID]-app'
         name: 'init-app'
         port: 8000
-        healthPath: ''/health/''
+        healthPath: '/health/'
 
   nodeSelector:
     key: 'karpenter.sh/nodepool'

@@ -7,9 +7,9 @@ ingress:
   annotations:
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/backend-protocol: 'HTTP'
-    alb.ingress.kubernetes.io/certificate-arn: '<SANDBOX_CERTIFICATE_ARN>'
+    alb.ingress.kubernetes.io/certificate-arn: 'arn:aws:acm:me-central-1:843554671018:certificate/410201eb-1cc7-4a70-8f5f-8111d25a9ff8'
     alb.ingress.kubernetes.io/group.name: 'default'
-    alb.ingress.kubernetes.io/healthcheck-path: ''/health/''
+    alb.ingress.kubernetes.io/healthcheck-path: '/health/'
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/scheme: 'internet-facing'
     alb.ingress.kubernetes.io/tags: 'Name=ygg-sandbox-default-alb-eks-tf, Platform=EKS, Environment=sandbox'

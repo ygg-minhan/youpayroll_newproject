@@ -54,7 +54,7 @@ deployment:
       cpu:
         requests: 100m
       health:
-        path: ''/health/''
+        path: '/health/'
         port: 8000
         scheme: 'HTTP'
       startupProbe:
