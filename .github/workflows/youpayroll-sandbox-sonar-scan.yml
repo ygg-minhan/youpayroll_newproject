@@ -9,7 +9,7 @@ on:
 
 jobs:
   sonar-scan:
-    uses: YouGotaGift/devops-organization-actions/.github/workflows/sonar-scan.yaml@main
+    uses: YouGotaGift/devops_organization_actions/.github/workflows/sonar-scan.yaml@main
     with:
       SONAR_EXTERNAL_URL: ${{ vars.SONAR_EXTERNAL_URL }}
       APPLICATION_NAME: youpayroll

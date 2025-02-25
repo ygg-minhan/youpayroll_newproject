@@ -1,0 +1,30 @@
+name: Build & Deploy youpayroll
+run-name: Deploying youpayroll ${{ inputs.environment }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      rebuild_req:
+        description: 'Force reinstall requirement'
+        required: true
+        default: 'false'
+        type: boolean
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'sandbox'
+        type: choice
+        options:
+        - sandbox
+        - production
+
+
+jobs:
+  deploy:
+    name: youpayroll
+    uses: YouGotaGift/devops-organization-actions/.github/workflows/me-central-1-application-build-and-deploy.yml@main
+    with:
+      application_name: youpayroll
+      rebuild_req: ${{ inputs.rebuild_req }}
+      environment: ${{ inputs.environment }}
+    secrets: inherit
