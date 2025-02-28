@@ -15,5 +15,5 @@ ADD ./deployment/app/packages/apk/base /ygag/packages/apk/base
 # Install dependencies
 RUN apk update && \
     apk add --no-cache --no-network /ygag/packages/apk/base/* && \
-    pip 25.0 install --no-cache-dir --upgrade pip==22.0.4 && \
+    pip3.11 install --no-cache-dir --upgrade pip==22.0.4 && \
     rm -rf /ygag/packages/apk
