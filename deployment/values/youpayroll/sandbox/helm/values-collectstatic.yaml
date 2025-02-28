@@ -36,7 +36,6 @@ job:
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpayroll-envs"
-    - 
     
     
 

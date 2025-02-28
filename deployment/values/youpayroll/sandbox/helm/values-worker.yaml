@@ -55,7 +55,6 @@ deployment:
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpayroll-envs"
-    - 
     
     
 
