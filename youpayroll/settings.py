@@ -135,7 +135,8 @@ AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME')
 AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.' \
                        f'{AWS_S3_REGION_NAME}.amazonaws.com'
 
-AWS_S3_FILE_OVERWRITE = config('AWS_S3_FILE_OVERWRITE', cast=bool)
+AWS_S3_FILE_OVERWRITE = config('AWS_S3_FILE_OVERWRITE', default=False,
+                               cast=bool)
 AWS_DEFAULT_ACL = config('AWS_DEFAULT_ACL')
 AWS_QUERYSTRING_AUTH = config('AWS_QUERYSTRING_AUTH', cast=bool)
 
