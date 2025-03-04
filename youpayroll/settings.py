@@ -137,8 +137,6 @@ AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.' \
 
 AWS_S3_FILE_OVERWRITE = config('AWS_S3_FILE_OVERWRITE', default=False,
                                cast=bool)
-AWS_DEFAULT_ACL = config('AWS_DEFAULT_ACL')
-AWS_QUERYSTRING_AUTH = config('AWS_QUERYSTRING_AUTH', cast=bool)
 
 
 # Static files (CSS, JavaScript, Images)
