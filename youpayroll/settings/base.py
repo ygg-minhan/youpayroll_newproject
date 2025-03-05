@@ -84,7 +84,7 @@ WSGI_APPLICATION = 'youpayroll.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': config('DATABASE_ENGINE'),
         'NAME': config('DATABASES_NAME'),
         'USER': config('DATABASES_USER'),
         'PASSWORD': config('DATABASES_PASSWORD'),
