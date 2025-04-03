@@ -1,5 +1,7 @@
 RESTRICTED_GROUPS = ['EMPLOYEE']
 
+YGG_EMAIL = "yougotagift.com"
+
 JANUARY = 1
 FEBRUARY = 2
 MARCH = 3
