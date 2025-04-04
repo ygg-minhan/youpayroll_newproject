@@ -18,9 +18,15 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from graphene_file_upload.django import FileUploadGraphQLView
+from django.views.decorators.csrf import csrf_exempt
+from youpayroll.schema import schema
+
 
 urlpatterns = [
     path('vinton-gray-cerf/', admin.site.urls),
+    path('graphql/', csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True,
+                                                     schema=schema))),
     path('accounts/', include('allauth.urls')),
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -29,10 +29,12 @@ class Payee(models.Model):
     pan_no = models.CharField(max_length=10, null=True, blank=True)
     date_of_joining = models.CharField(max_length=50, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
+    is_dark_mode = models.BooleanField(default=False,
+                help_text="Enable dark mode for a darker, "
+                          "low-light-friendly interface ")
 
     class Meta:
         verbose_name = _("Payee")
-        verbose_name_plural = _("Payees")
 
     def __str__(self):
         if self.full_name is not None:

@@ -14,6 +14,7 @@ from pathlib import Path
 from decouple import config
 import os
 
+
 from django.conf.global_settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,13 +27,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
+
+
+ALLOWED_HOSTS = ['*']
+
 DEBUG = config('DEBUG', cast=bool)
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '*'
-]
 
 # Application definition
 
@@ -50,13 +50,13 @@ INSTALLED_APPS = [
     'storages',
     'payroll',
     'configs',
-
+    'graphene_django',
+    'graphene_file_upload',
     'django.contrib.sites',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-
 ]
 
 MIDDLEWARE = [
@@ -85,7 +85,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django.template.context_processors.request',
             ],
         },
     },
@@ -146,7 +145,9 @@ AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
 AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME')
 AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.' \
                        f'{AWS_S3_REGION_NAME}.amazonaws.com'
-
+AWS_S3_FILE_OVERWRITE = config('AWS_S3_FILE_OVERWRITE', cast=bool)
+AWS_DEFAULT_ACL = config('AWS_DEFAULT_ACL')
+AWS_QUERYSTRING_AUTH = config('AWS_QUERYSTRING_AUTH', cast=bool)
 AWS_S3_FILE_OVERWRITE = config('AWS_S3_FILE_OVERWRITE', default=False,
                                cast=bool)
 
@@ -203,6 +204,14 @@ LOGGING = {
     },
 }
 
+GRAPHENE = {
+    'SCHEMA': 'youpayroll.schema.schema',
+}
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
+
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
@@ -229,4 +238,3 @@ SOCIALACCOUNT_ADAPTER = "payees.adapters.CustomSocialAccountAdapter"
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
-
