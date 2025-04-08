@@ -3,9 +3,11 @@ import logging
 from django.contrib import admin
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils.html import format_html
 
 from payees.utils import restrict_queryset_by_group
-from .models import Payment, PayRecordRegister, PayRun, PayRunStatusChoices
+from .models import (Payment, PayRecordRegister, PayRun,
+                     PayRunStatusChoices, Form16, Form16Entries)
 from .alerts import (approve_payrun_action, reject_payrun_action,
                      run_payrun_action, is_payrun_exists)
 from .forms import PayRunForm
@@ -94,7 +96,7 @@ class PayRecordRegisterAdmin(admin.ModelAdmin):
     readonly_fields = ('payee', 'amount', 'pay_run', 'tds_percentage',
                        'bank_name', 'account_number', 'account_holder_name',
                        'account_type', 'ifsc_code', 'micr_code',
-                       'swift_code', 'branch_address', 'gross_amount')
+                       'swift_code', 'branch_address', 'gross_amount',)
     list_filter = ('pay_run__status', 'pay_run__month', 'pay_run__year')
     list_display = ('payee', 'amount', 'gross_amount', 'pay_run')
     actions = None  # Disable the delete action
@@ -123,6 +125,76 @@ class PayRecordRegisterAdmin(admin.ModelAdmin):
         pay_record_register.save()
 
 
+class Forms16EntriesAdmin(admin.ModelAdmin):
+    list_display = ('financial_year', 'form_16_link')
+    list_filter = ('financial_year',)
+    list_per_page = 20
+
+    def form_16_link(self, obj):
+        if obj.form_16:
+            return format_html(
+                "<a href='{}' target='_blank'>{}</a>",
+                obj.form_16.url,
+                obj.form_16.name.split('/')[-1]  # Show only filename
+            )
+        return "No File"
+
+    form_16_link.short_description = "Form 16 File"
+
+
+class Form16Inline(admin.TabularInline):  # or StackedInline
+    model = Form16Entries
+    fields = ['form_16_link', 'financial_year']
+    readonly_fields = ['form_16_link', 'financial_year']
+    extra = 0
+    can_delete = False
+    verbose_name = "Form16 PDF"
+    verbose_name_plural = "Form16 PDFs"
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('financial_year')
+
+    def form_16_link(self, obj):
+        if obj.form_16:
+            return format_html(
+                "<a href='{}' target='_blank'>{}</a>",
+                obj.form_16.url,
+                obj.form_16.name.split('/')[-1]  # Show only filename
+            )
+        return "No File"
+
+
+class Forms16Admin(admin.ModelAdmin):
+    list_display = ('financial_year', 'form_16_link', 'view_form_entries')
+
+    def form_16_link(self, obj):
+        if obj.form16_zip_file:
+            return format_html(
+                "<a href='{}' target='_blank'>{}</a>",
+                obj.form16_zip_file.url,
+                obj.form16_zip_file.name.split('/')[-1]  # Show only filename
+            )
+        return "No File"
+
+    form_16_link.short_description = "Form 16 File"
+
+    def view_form_entries(self, obj):
+        """
+        Generates a button that links to Form16Entries filtered by financial_year.
+        """
+        url = reverse(
+            'admin:payroll_form16entries_changelist')
+        url += f"?financial_year__id__exact={obj.id}"  # Filters by foreign key ID
+        return format_html(
+            '<a class="button" href="{}" style="background:#28a745; color:white; padding:4px 8px; border-radius:4px; text-decoration:none;">View Form Entries</a>',
+            url)
+
+    view_form_entries.short_description = "View Form Entries"
+
+
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(PayRecordRegister, PayRecordRegisterAdmin)
 admin.site.register(PayRun, PayRunAdmin)
+admin.site.register(Form16, Forms16Admin)
+admin.site.register(Form16Entries, Forms16EntriesAdmin)

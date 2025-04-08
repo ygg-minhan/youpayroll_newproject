@@ -1,5 +1,7 @@
 import logging
 from django.contrib import admin
+
+from payroll.admin import Form16Inline
 from .models import (Payee, BankDetails, BankDetailsAck)
 from .utils import restrict_queryset_by_group
 from .tasks import fetch_details
@@ -8,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class PayeeAdmin(admin.ModelAdmin):
+    inlines = [Form16Inline]
     list_display = ["hrm_id", "full_name", "tds_type", "status"]
     readonly_fields = ["full_name", "email", "pan_no", "address",
                        "date_of_joining"]

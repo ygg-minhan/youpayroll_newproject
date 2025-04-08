@@ -1,16 +1,15 @@
+import os
 import uuid
-import datetime
-
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.db import models
 from django.contrib.auth.models import User
-
 from auditlog.registry import auditlog
-
 from .utils import get_month_name
 from payees.models import Payee
 from configs.models import Component
+from .upload_helpers import (validate_zip_file,
+                             form16_extracted_path)
 
 
 # Create your models here.
@@ -121,3 +120,30 @@ class ComponentValue(models.Model):
 
 
 auditlog.register(ComponentValue)
+
+
+class Form16(models.Model):
+    financial_year = models.CharField(max_length=10, null=True, blank=True)
+    uploaded_on = models.DateTimeField(auto_now_add=True)
+    form16_zip_file = models.FileField(upload_to='uploads/payroll/form16/',
+                                       validators=[validate_zip_file])
+    is_extracted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.financial_year
+
+
+auditlog.register(Form16)
+
+
+class Form16Entries(models.Model):
+    financial_year = models.ForeignKey(Form16, on_delete=models.CASCADE)
+    payee = models.ForeignKey(Payee, on_delete=models.SET_NULL, null=True,
+                              blank=True)
+    form_16 = models.FileField(upload_to=form16_extracted_path)
+
+    def __str__(self):
+        return os.path.basename(self.form_16.name)
+
+
+auditlog.register(Form16Entries)

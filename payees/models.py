@@ -26,7 +26,8 @@ class Payee(models.Model):
                                  null=True, to_field="tds_legal_name")
     full_name = models.CharField(max_length=100, null=True, blank=True)
     email = models.EmailField(max_length=100, null=True, blank=True)
-    pan_no = models.CharField(max_length=10, null=True, blank=True)
+    pan_no = models.CharField(max_length=10, unique=True, null=True,
+                              blank=True)
     date_of_joining = models.CharField(max_length=50, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     is_dark_mode = models.BooleanField(default=False,
