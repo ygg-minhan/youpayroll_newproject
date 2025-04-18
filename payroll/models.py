@@ -96,6 +96,7 @@ class PayRecordRegister(models.Model):
     tds_percentage = models.FloatField(null=True, blank=True)
     gross_amount = models.DecimalField(max_digits=10, decimal_places=2,
                                        null=True, blank=True)
+    net_income = models.FloatField(null=True, blank=True)
 
     class Meta:
         unique_together = ('payee', 'pay_run')

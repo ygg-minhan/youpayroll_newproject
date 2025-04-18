@@ -11,7 +11,9 @@ from .models import (Payment, PayRecordRegister, PayRun,
 from .alerts import (approve_payrun_action, reject_payrun_action,
                      run_payrun_action, is_payrun_exists)
 from .forms import PayRunForm
+from .tasks import net_income_salary_calculation
 from .models import ComponentValue
+from configs.models import Component
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +64,58 @@ class PayRunAdmin(admin.ModelAdmin):
     run_payrun.short_description = 'Run selected payrun'
 
 
-class ComponentValueInline(admin.TabularInline):
+class EarningsInline(admin.TabularInline):
     model = ComponentValue
-    fields = ('component', 'value')
-    can_delete = False
     extra = 1
+    can_delete = False
+    verbose_name_plural = "Additional Earnings"
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.filter(component__operation='sum')
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name == "component":
+            kwargs["queryset"] = Component.objects.filter(operation='sum')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+
+        # Disable related buttons (add, view, change)
+        component_field = formset.form.base_fields['component']
+        component_field.widget.can_add_related = False
+        component_field.widget.can_change_related = False
+        component_field.widget.can_view_related = False
+
+        # Disable fields if the PayRun status is 'APPROVED'
+        if obj and obj.pay_run.status == PayRunStatusChoices.APPROVED:
+            component_field.disabled = True
+            formset.form.base_fields['value'].disabled = True
+
+        return formset
+
+    def has_add_permission(self, request, obj=None):
+        # Disable add permission if PayRun status is 'APPROVED'
+        if obj and obj.pay_run.status == PayRunStatusChoices.APPROVED:
+            return False
+        return super().has_add_permission(request, obj)
+
+
+class DeductionsInline(admin.TabularInline):
+    model = ComponentValue
+    extra = 1
+    can_delete = False
+    verbose_name_plural = "Deductions"
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.filter(component__operation='subtract')
+
+    def formfield_for_foreignkey(self, db_field, request=None, **kwargs):
+        if db_field.name == "component":
+            kwargs["queryset"] = Component.objects.filter(operation='subtract')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
@@ -92,14 +141,28 @@ class ComponentValueInline(admin.TabularInline):
 
 
 class PayRecordRegisterAdmin(admin.ModelAdmin):
-    inlines = [ComponentValueInline]
+    inlines = [EarningsInline, DeductionsInline]
     readonly_fields = ('payee', 'amount', 'pay_run', 'tds_percentage',
                        'bank_name', 'account_number', 'account_holder_name',
                        'account_type', 'ifsc_code', 'micr_code',
-                       'swift_code', 'branch_address', 'gross_amount',)
+                       'swift_code', 'branch_address', 'gross_amount',
+                       'net_income')
     list_filter = ('pay_run__status', 'pay_run__month', 'pay_run__year')
     list_display = ('payee', 'amount', 'gross_amount', 'pay_run')
     actions = None  # Disable the delete action
+
+    def get_total_earnings(self, obj):
+        return sum(c.value for c in obj.components.filter(
+            component__operation='Sum'))
+
+    get_total_earnings.short_description = 'Total Earnings'
+
+    def get_total_deductions(self, obj):
+        return sum(
+            c.value for c in obj.components.filter(
+                component__operation='Subtract'))
+
+    get_total_deductions.short_description = 'Total Deductions'
 
     def has_delete_permission(self, request, obj=None):
         # Hide delete for all objects
@@ -123,6 +186,17 @@ class PayRecordRegisterAdmin(admin.ModelAdmin):
         # Update gross_amount and save the instance
         pay_record_register.gross_amount = total
         pay_record_register.save()
+
+        pay_run = pay_record_register.pay_run
+
+        # Check if the PayRun's status is 'COMPLETED'
+        if pay_run.status == PayRunStatusChoices.COMPLETED:
+            # Call the task with the PayRun id
+            net_income_salary_calculation.delay(pay_run.id)
+        else:
+            # Log or print a message if the status is not 'COMPLETED'
+            logger.warning(
+                f"PayRun with ID={pay_run.id} is not completed. Status: {pay_run.status}")
 
 
 class Forms16EntriesAdmin(admin.ModelAdmin):
