@@ -21,12 +21,14 @@ from django.conf.urls.static import static
 from graphene_file_upload.django import FileUploadGraphQLView
 from django.views.decorators.csrf import csrf_exempt
 from youpayroll.schema import schema
+from .views import HealthCheck
 
 
 urlpatterns = [
     path('vinton-gray-cerf/', admin.site.urls),
+    path('health/', HealthCheck.as_view(), name='health'),
     path('graphql/', csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True,
-                                                     schema=schema))),
+                                                               schema=schema))),
     path('accounts/', include('allauth.urls')),
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
