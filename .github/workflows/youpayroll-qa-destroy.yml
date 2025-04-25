@@ -1,5 +1,5 @@
 name: Destroy QA Deployment
-run-name: Destroying youpayroll ${{ inputs.branch }}
+run-name: Destroying youpayroll ${{ inputs.branch || github.event.client_payload.branch }}
 
 on:
   workflow_dispatch:
