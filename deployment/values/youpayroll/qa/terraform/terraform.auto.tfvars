@@ -221,7 +221,7 @@ application_charts = [
   },
   # consumer-name
   {
-    create_helm_release = true
+    create_helm_release = false
 
     namespace        = "youpayroll-[JIRA_ID]"
     create_namespace = false
