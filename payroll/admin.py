@@ -6,13 +6,14 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from payees.utils import restrict_queryset_by_group
+from youpayroll.admin_mixins import PayeeRestrictAdmin
 from .models import (Payment, PayRecordRegister, PayRun,
-                     PayRunStatusChoices, Form16, Form16Entries)
+                     PayRunStatusChoices, Form16, Form16Entries,
+                     ComponentValue)
 from .alerts import (approve_payrun_action, reject_payrun_action,
                      run_payrun_action, is_payrun_exists)
 from .forms import PayRunForm
 from .tasks import net_income_salary_calculation
-from .models import ComponentValue
 from configs.models import Component
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,8 @@ logger = logging.getLogger(__name__)
 
 # Register your models here.
 
-class PaymentAdmin(admin.ModelAdmin):
+
+class PaymentAdmin(PayeeRestrictAdmin):
     list_display = ["payee", "label"]
 
     def get_queryset(self, request):
@@ -140,7 +142,7 @@ class DeductionsInline(admin.TabularInline):
         return super().has_add_permission(request, obj)
 
 
-class PayRecordRegisterAdmin(admin.ModelAdmin):
+class PayRecordRegisterAdmin(PayeeRestrictAdmin):
     inlines = [EarningsInline, DeductionsInline]
     readonly_fields = ('payee', 'amount', 'pay_run', 'tds_percentage',
                        'bank_name', 'account_number', 'account_holder_name',
@@ -199,7 +201,7 @@ class PayRecordRegisterAdmin(admin.ModelAdmin):
                 f"PayRun with ID={pay_run.id} is not completed. Status: {pay_run.status}")
 
 
-class Forms16EntriesAdmin(admin.ModelAdmin):
+class Forms16EntriesAdmin(PayeeRestrictAdmin):
     list_display = ('financial_year', 'form_16_link')
     list_filter = ('financial_year',)
     list_per_page = 20
