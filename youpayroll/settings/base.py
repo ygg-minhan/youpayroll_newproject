@@ -14,7 +14,6 @@ from pathlib import Path
 from decouple import config
 import os
 
-
 from django.conf.global_settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -31,8 +30,12 @@ SECRET_KEY = config('SECRET_KEY')
 
 ALLOWED_HOSTS = ['*']
 
-DEBUG = config('DEBUG', cast=bool)
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.yougotagift.co',
+    'https://*.yougotagift.com',
+]
 
+DEBUG = config('DEBUG', cast=bool)
 
 # Application definition
 
