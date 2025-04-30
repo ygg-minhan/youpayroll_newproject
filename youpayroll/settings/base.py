@@ -142,14 +142,23 @@ USE_I18N = True
 
 USE_TZ = True
 
+
+AWS_S3_HOST = config('AWS_S3_HOST')
+AWS_S3_BOTO_PARAMS = {
+    'host': AWS_S3_HOST
+}
+AWS_DEFAULT_ACL = config('AWS_DEFAULT_ACL')
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_CLOUDFRONT_DOMAIN = config('AWS_CLOUDFRONT_DOMAIN')
 AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME')
 AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.' \
                        f'{AWS_S3_REGION_NAME}.amazonaws.com'
-AWS_S3_FILE_OVERWRITE = config('AWS_S3_FILE_OVERWRITE', cast=bool)
-AWS_DEFAULT_ACL = config('AWS_DEFAULT_ACL')
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+AWS_LOCATION = config('AWS_LOCATION', 'staticfiles')
 AWS_QUERYSTRING_AUTH = config('AWS_QUERYSTRING_AUTH', cast=bool)
 AWS_S3_FILE_OVERWRITE = config('AWS_S3_FILE_OVERWRITE', default=False,
                                cast=bool)
@@ -157,7 +166,10 @@ AWS_S3_FILE_OVERWRITE = config('AWS_S3_FILE_OVERWRITE', default=False,
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = 'https://%s/%s/' % (AWS_S3_CUSTOM_DOMAIN, AWS_LOCATION)
+STATICFILES_LOCATION = 'staticfiles'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIAFILES_LOCATION = 'media'
