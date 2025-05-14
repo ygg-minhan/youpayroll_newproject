@@ -54,9 +54,6 @@ deployment:
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpayroll-envs"
-    - 
-    
-    
 
   nodeSelector:
     key: 'karpenter.sh/nodepool'

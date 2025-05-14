@@ -1,7 +1,7 @@
 namespace:
   - name: 'youpayroll-[JIRA_ID]'
     annotations:
-      field.cattle.io/projectId: 'c-m-mwl52l26:p-w9rvb'
+      field.cattle.io/projectId: 'c-m-mwl52l26:p-rkhhl'
 
     resource_quota_disabled:
       requests.cpu: "3340m"

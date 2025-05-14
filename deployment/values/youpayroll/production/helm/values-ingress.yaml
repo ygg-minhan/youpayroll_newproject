@@ -7,7 +7,7 @@ ingress:
   annotations:
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/backend-protocol: 'HTTP'
-    alb.ingress.kubernetes.io/certificate-arn: '<PRODUCTION_CERTIFICATE_ARN>'
+    alb.ingress.kubernetes.io/certificate-arn: 'arn:aws:acm:me-central-1:844294577846:certificate/258465b9-6866-4a2f-8027-d73722927117'
     alb.ingress.kubernetes.io/group.name: 'default'
     alb.ingress.kubernetes.io/healthcheck-path: '/health/'
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'

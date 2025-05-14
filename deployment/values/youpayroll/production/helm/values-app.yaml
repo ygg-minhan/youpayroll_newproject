@@ -70,7 +70,6 @@ deployment:
         - name: 'youpayroll-app-env-volume'
           mountPath: "/vault/secrets"
 
-
   volumes:
     - name: 'ygag-youpayroll-production-app-logs'
       hostPath:
@@ -81,9 +80,6 @@ deployment:
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpayroll-envs"
-    - 
-    
-    
 
   nodeSelector:
     key: "karpenter.sh/nodepool"

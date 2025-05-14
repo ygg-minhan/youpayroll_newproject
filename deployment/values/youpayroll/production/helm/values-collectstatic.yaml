@@ -26,7 +26,6 @@ job:
         - name: 'youpayroll-app-env-volume'
           mountPath: "/vault/secrets"
 
-
   volumes:
     - name: 'ygag-youpayroll-production-collectstatic-logs'
       hostPath:
@@ -37,9 +36,6 @@ job:
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpayroll-envs"
-    - 
-    
-    
 
   nodeSelector:
     key: 'karpenter.sh/nodepool'
