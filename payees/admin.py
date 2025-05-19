@@ -1,13 +1,23 @@
 import logging
 from django.contrib import admin
-
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from payroll.admin import Form16Inline
-from youpayroll.admin_mixins import PayeeRestrictAdmin
 from .models import (Payee, BankDetails, BankDetailsAck)
 from .utils import restrict_queryset_by_group
 from .tasks import fetch_details
 
 logger = logging.getLogger(__name__)
+
+
+class CustomUserAdmin(BaseUserAdmin):
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return restrict_queryset_by_group(qs, request.user)
+
+
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)
 
 
 class PayeeAdmin(admin.ModelAdmin):
@@ -28,15 +38,17 @@ class PayeeAdmin(admin.ModelAdmin):
         queryset = super().get_queryset(request)
         qs = queryset.filter(is_deleted=False)
 
+        # Superusers can see all, just filtered by 'is_deleted'
         if request.user.is_superuser:
-            return restrict_queryset_by_group(qs, request.user)
+            return restrict_queryset_by_group(qs, request.user,
+                                              payee_field='payee')
 
-        # Non-superusers only see their own Payee record
-        return restrict_queryset_by_group(qs.filter(user=request.user),
-                                          request.user)
+        # Non-superusers: restrict by payee and group logic
+        return restrict_queryset_by_group(qs, request.user,
+                                          payee_field='payee')
 
 
-class BankDetailsAdmin(PayeeRestrictAdmin):
+class BankDetailsAdmin(admin.ModelAdmin):
     list_display = ["payee", "bank_name", "account_type",
                     "payee_acknowledgement"]
     readonly_fields = ('payee_acknowledgement',)
@@ -47,8 +59,13 @@ class BankDetailsAdmin(PayeeRestrictAdmin):
                                           payee_field='payee')
 
 
-class BankDetailsAckAdmin(PayeeRestrictAdmin):
+class BankDetailsAckAdmin(admin.ModelAdmin):
     list_display = ['payee', 'uploaded_date']
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return restrict_queryset_by_group(qs, request.user,
+                                          payee_field='payee')
 
 
 admin.site.register(Payee, PayeeAdmin)

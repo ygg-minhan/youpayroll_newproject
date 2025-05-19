@@ -6,7 +6,6 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from payees.utils import restrict_queryset_by_group
-from youpayroll.admin_mixins import PayeeRestrictAdmin
 from .models import (Payment, PayRecordRegister, PayRun,
                      PayRunStatusChoices, Form16, Form16Entries,
                      ComponentValue)
@@ -22,7 +21,7 @@ logger = logging.getLogger(__name__)
 # Register your models here.
 
 
-class PaymentAdmin(PayeeRestrictAdmin):
+class PaymentAdmin(admin.ModelAdmin):
     list_display = ["payee", "label"]
 
     def get_queryset(self, request):
@@ -142,7 +141,7 @@ class DeductionsInline(admin.TabularInline):
         return super().has_add_permission(request, obj)
 
 
-class PayRecordRegisterAdmin(PayeeRestrictAdmin):
+class PayRecordRegisterAdmin(admin.ModelAdmin):
     inlines = [EarningsInline, DeductionsInline]
     readonly_fields = ('payee', 'amount', 'pay_run', 'tds_percentage',
                        'bank_name', 'account_number', 'account_holder_name',
@@ -152,6 +151,11 @@ class PayRecordRegisterAdmin(PayeeRestrictAdmin):
     list_filter = ('pay_run__status', 'pay_run__month', 'pay_run__year')
     list_display = ('payee', 'amount', 'gross_amount', 'pay_run')
     actions = None  # Disable the delete action
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        qs = restrict_queryset_by_group(qs, request.user, payee_field='payee')
+        return qs.filter(pay_run__status='approved')
 
     def get_total_earnings(self, obj):
         return sum(c.value for c in obj.components.filter(
@@ -201,10 +205,15 @@ class PayRecordRegisterAdmin(PayeeRestrictAdmin):
                 f"PayRun with ID={pay_run.id} is not completed. Status: {pay_run.status}")
 
 
-class Forms16EntriesAdmin(PayeeRestrictAdmin):
+class Forms16EntriesAdmin(admin.ModelAdmin):
     list_display = ('financial_year', 'form_16_link')
     list_filter = ('financial_year',)
     list_per_page = 20
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return restrict_queryset_by_group(qs, request.user,
+                                          payee_field='payee')
 
     def form_16_link(self, obj):
         if obj.form_16:
