@@ -5,6 +5,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.html import format_html
 
+from decimal import Decimal
 from payees.utils import restrict_queryset_by_group
 from .models import (Payment, PayRecordRegister, PayRun,
                      PayRunStatusChoices, Form16, Form16Entries,
@@ -12,7 +13,6 @@ from .models import (Payment, PayRecordRegister, PayRun,
 from .alerts import (approve_payrun_action, reject_payrun_action,
                      run_payrun_action, is_payrun_exists)
 from .forms import PayRunForm
-from .tasks import net_income_salary_calculation
 from configs.models import Component
 
 logger = logging.getLogger(__name__)
@@ -154,6 +154,9 @@ class PayRecordRegisterAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs  # show everything, even unapproved
+
         qs = restrict_queryset_by_group(qs, request.user, payee_field='payee')
         return qs.filter(pay_run__status='approved')
 
@@ -193,20 +196,17 @@ class PayRecordRegisterAdmin(admin.ModelAdmin):
         pay_record_register.gross_amount = total
         pay_record_register.save()
 
-        pay_run = pay_record_register.pay_run
+        tds_percentage = Decimal(str(pay_record_register.tds_percentage or 0))  # Safe default to 0
+        tds_amount = (pay_record_register.gross_amount * tds_percentage) / Decimal('100')
+        total_net_income = pay_record_register.gross_amount - tds_amount
 
-        # Check if the PayRun's status is 'COMPLETED'
-        if pay_run.status == PayRunStatusChoices.COMPLETED:
-            # Call the task with the PayRun id
-            net_income_salary_calculation.delay(pay_run.id)
-        else:
-            # Log or print a message if the status is not 'COMPLETED'
-            logger.warning(
-                f"PayRun with ID={pay_run.id} is not completed. Status: {pay_run.status}")
+        pay_record_register.net_income = total_net_income
+        pay_record_register.save()
 
 
 class Forms16EntriesAdmin(admin.ModelAdmin):
-    list_display = ('financial_year', 'form_16_link')
+    list_display = (
+        'financial_year', 'form_16_link', 'form_16_link_to_download')
     list_filter = ('financial_year',)
     list_per_page = 20
 
@@ -225,6 +225,15 @@ class Forms16EntriesAdmin(admin.ModelAdmin):
         return "No File"
 
     form_16_link.short_description = "Form 16 File"
+
+    def form_16_link_to_download(self, obj):
+        if obj.form_16:
+            return format_html('<a href="{}" download>Download</a>',
+                               obj.form_16.url)
+        return "No file"
+
+    form_16_link_to_download.short_description = 'Form 16'
+    form_16_link_to_download.allow_tags = True
 
 
 class Form16Inline(admin.TabularInline):  # or StackedInline

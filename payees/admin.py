@@ -1,7 +1,10 @@
 import logging
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.urls import reverse
+from django.utils.html import format_html
+from payees.constants import RESTRICTED_GROUPS
 from payroll.admin import Form16Inline
 from .models import (Payee, BankDetails, BankDetailsAck)
 from .utils import restrict_queryset_by_group
@@ -11,6 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 class CustomUserAdmin(BaseUserAdmin):
+
+    def get_list_filter(self, request):
+        # Restrict filters for users in restricted groups
+        if request.user.groups.filter(name__in=RESTRICTED_GROUPS).exists():
+            return ()  # Return empty tuple to hide all filters
+        return super().get_list_filter(request)
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return restrict_queryset_by_group(qs, request.user)
@@ -38,19 +48,15 @@ class PayeeAdmin(admin.ModelAdmin):
         queryset = super().get_queryset(request)
         qs = queryset.filter(is_deleted=False)
 
-        # Superusers can see all, just filtered by 'is_deleted'
         if request.user.is_superuser:
-            return restrict_queryset_by_group(qs, request.user,
-                                              payee_field='payee')
+            return restrict_queryset_by_group(qs, request.user)
 
-        # Non-superusers: restrict by payee and group logic
-        return restrict_queryset_by_group(qs, request.user,
-                                          payee_field='payee')
+        return restrict_queryset_by_group(qs, request.user)
 
 
 class BankDetailsAdmin(admin.ModelAdmin):
     list_display = ["payee", "bank_name", "account_type",
-                    "payee_acknowledgement"]
+                    "payee_acknowledgement", 'acknowledge_button']
     readonly_fields = ('payee_acknowledgement',)
 
     def get_queryset(self, request):
@@ -58,14 +64,71 @@ class BankDetailsAdmin(admin.ModelAdmin):
         return restrict_queryset_by_group(qs, request.user,
                                           payee_field='payee')
 
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        messages.info(request,
+                      "Please take a screenshot once you go through all of the bank details and acknowledge it.")
+        return super().change_view(request, object_id, form_url,
+                                   extra_context=extra_context)
+
+    def acknowledge_button(self, obj):
+        try:
+            # Check if an ack object already exists
+            BankDetailsAck.objects.get(payee=obj.payee)
+            return "Acknowledged"  # Or just return empty string
+        except BankDetailsAck.DoesNotExist:
+            # Redirect to the add form with the payee pre-filled
+            url = reverse('admin:payees_bankdetailsack_add')
+            return format_html(
+                '<a class="button" href="{}?payee={}">Acknowledge</a>', url,
+                obj.payee.id
+            )
+
+    acknowledge_button.short_description = 'Acknowledge'
+    acknowledge_button.allow_tags = True
+
 
 class BankDetailsAckAdmin(admin.ModelAdmin):
-    list_display = ['payee', 'uploaded_date']
+    list_display = ['payee', 'uploaded_date', 'is_approved']
+    readonly_fields = ('payee',)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return restrict_queryset_by_group(qs, request.user,
                                           payee_field='payee')
+
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        if not request.user.is_superuser:
+            try:
+                initial['payee'] = Payee.objects.get(user=request.user).id
+            except Payee.DoesNotExist:
+                pass
+        return initial
+
+    def save_model(self, request, obj, form, change):
+        if not obj.payee_id and not request.user.is_superuser:
+            try:
+                obj.payee = Payee.objects.get(user=request.user)
+            except Payee.DoesNotExist:
+                pass
+        super().save_model(request, obj, form, change)
+
+    def has_add_permission(self, request):
+        # Superusers and HR can always add
+        if request.user.is_superuser and not request.user.groups.filter(name__in=RESTRICTED_GROUPS).exists():
+            return True
+
+        # Get the payee object for the user
+        try:
+            payee = Payee.objects.get(user=request.user)
+        except Payee.DoesNotExist:
+            return False  # no payee, no permission
+
+        # Check if a BankDetailAck already exists
+        if BankDetailsAck.objects.filter(payee=payee).exists():
+            return False
+
+        return True  # allow add if no ack exists yet
 
 
 admin.site.register(Payee, PayeeAdmin)
