@@ -24,8 +24,7 @@ def extract_zip_and_create_entries(sender, instance, created, **kwargs):
         logger.debug(
             "Skipping extraction (already extracted or no zip file present).")
         return
-
-    zip_path = instance.form16_zip_file.path
+    zip_path = instance.form16_zip_file
 
     try:
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
@@ -39,8 +38,8 @@ def extract_zip_and_create_entries(sender, instance, created, **kwargs):
                     cleaned_filename = os.path.basename(file_name)
                     save_path = f'uploads/payroll/form16/extracted/{cleaned_filename}'
 
-                    """ 
-                    Deletes the file first if it already exists (avoids 
+                    """
+                    Deletes the file first if it already exists (avoids
                     duplicates).
                     """
                     if default_storage.exists(save_path):
@@ -63,7 +62,7 @@ def extract_zip_and_create_entries(sender, instance, created, **kwargs):
                         payee = None
 
                     """
-                    Creates a new Form16Entries record, links it to Form16 and 
+                    Creates a new Form16Entries record, links it to Form16 and
                     (if found) to Payee, and saves the file content.
                     """
                     new_entry = Form16Entries(financial_year=instance,
