@@ -7,7 +7,7 @@ from django.utils.html import format_html
 
 from decimal import Decimal
 from payees.utils import restrict_queryset_by_group
-from payees.constants import RESTRICTED_GROUPS
+from payees.constants import RESTRICTED_PAYEE_GROUP
 from .models import (Payment, PayRecordRegister, PayRun,
                      PayRunStatusChoices, Form16, Form16Entries,
                      ComponentValue)
@@ -171,7 +171,7 @@ class PayRecordRegisterAdmin(admin.ModelAdmin):
             return qs  # show everything, even unapproved
 
         # Check if user is in a restricted group
-        is_restricted = request.user.groups.filter(name__in=RESTRICTED_GROUPS).exists()
+        is_restricted = request.user.groups.filter(name__in=RESTRICTED_PAYEE_GROUP).exists()
 
         if is_restricted:
             # Restrict to records linked to this user + filter for approved pay_runs

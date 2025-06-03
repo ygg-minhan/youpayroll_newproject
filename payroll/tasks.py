@@ -20,11 +20,14 @@ def run_pay_run_task(payrun_id):
         logger.error('PayRun with ID %s does not exist.', payrun_id)
         return
 
-    if pay_run.status != PayRunStatusChoices.DUE:
+    if pay_run.status in [PayRunStatusChoices.COMPLETED,
+                            PayRunStatusChoices.APPROVED,
+                            PayRunStatusChoices.REJECTED,
+                            PayRunStatusChoices.IN_PROGRESS,]:
         logger.warning('PayRun %s is not in DUE status. Skipping.', payrun_id)
         return
 
-    payees = Payee.objects.filter(status='active')
+    payees = Payee.objects.filter(status='active', is_deleted='False')
     pay_run.status = PayRunStatusChoices.IN_PROGRESS
     pay_run.save()
 
