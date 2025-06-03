@@ -65,23 +65,31 @@ class BankDetailsAdmin(admin.ModelAdmin):
                                           payee_field='payee')
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
-        messages.info(request,
-                      "Please take a screenshot once you go through all of the bank details and acknowledge it.")
-        return super().change_view(request, object_id, form_url,
-                                   extra_context=extra_context)
+        # Show the message only if the current user is in one of the restricted groups
+        if request.user.groups.filter(name__in=RESTRICTED_GROUPS).exists():
+            messages.info(
+                request,
+                "Please take a screenshot once you go through all of the bank details and acknowledge it."
+            )
+        return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
     def acknowledge_button(self, obj):
-        try:
-            # Check if an ack object already exists
-            BankDetailsAck.objects.get(payee=obj.payee)
-            return "Acknowledged"  # Or just return empty string
-        except BankDetailsAck.DoesNotExist:
-            # Redirect to the add form with the payee pre-filled
-            url = reverse('admin:payees_bankdetailsack_add')
-            return format_html(
-                '<a class="button" href="{}?payee={}">Acknowledge</a>', url,
-                obj.payee.id
-            )
+        if not obj.payee_acknowledgement:
+            try:
+                BankDetailsAck.objects.get(payee=obj.payee)
+                return format_html(
+                    '<a class="button" href="{}?payee={}">Acknowledge</a>',
+                    reverse('admin:payees_bankdetailsack_change', args=[
+                        BankDetailsAck.objects.get(payee=obj.payee).id]),
+                    obj.payee.id
+                )
+            except BankDetailsAck.DoesNotExist:
+                return format_html(
+                    '<a class="button" href="{}?payee={}">Acknowledge</a>',
+                    reverse('admin:payees_bankdetailsack_add'),
+                    obj.payee.id
+                )
+        return "Acknowledged"
 
     acknowledge_button.short_description = 'Acknowledge'
     acknowledge_button.allow_tags = True
@@ -112,12 +120,24 @@ class BankDetailsAckAdmin(admin.ModelAdmin):
         return initial
 
     def save_model(self, request, obj, form, change):
+        # Auto-assign payee for non-superusers
         if not obj.payee_id and not request.user.is_superuser:
             try:
                 obj.payee = Payee.objects.get(user=request.user)
             except Payee.DoesNotExist:
                 pass
+
         super().save_model(request, obj, form, change)
+
+        # After saving, update payee_acknowledgement if approved
+        if obj.is_approved:
+            try:
+                bank_details = BankDetails.objects.get(payee=obj.payee)
+                if not bank_details.payee_acknowledgement:
+                    bank_details.payee_acknowledgement = True
+                    bank_details.save(update_fields=['payee_acknowledgement'])
+            except BankDetails.DoesNotExist:
+                pass
 
     def has_add_permission(self, request):
         # Superusers and HR can always add
