@@ -53,6 +53,7 @@ def reject_payrun_action(modeladmin, request, queryset):
 
     if latest_payrun.status in [PayRunStatusChoices.COMPLETED,
                                 PayRunStatusChoices.APPROVED,
+                                PayRunStatusChoices.IN_PROGRESS,
                                 PayRunStatusChoices.DUE]:
 
         latest_payrun.status = PayRunStatusChoices.REJECTED
