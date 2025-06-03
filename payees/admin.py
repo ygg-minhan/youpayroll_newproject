@@ -89,7 +89,13 @@ class BankDetailsAdmin(admin.ModelAdmin):
 
 class BankDetailsAckAdmin(admin.ModelAdmin):
     list_display = ['payee', 'uploaded_date', 'is_approved']
-    readonly_fields = ('payee',)
+
+    def get_readonly_fields(self, request, obj=None):
+        # If superuser: no readonly fields
+        if request.user.is_superuser:
+            return []
+        # Otherwise: make 'payee' readonly
+        return ['payee']
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

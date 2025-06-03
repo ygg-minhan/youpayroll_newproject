@@ -7,6 +7,7 @@ from django.utils.html import format_html
 
 from decimal import Decimal
 from payees.utils import restrict_queryset_by_group
+from payees.constants import RESTRICTED_GROUPS
 from .models import (Payment, PayRecordRegister, PayRun,
                      PayRunStatusChoices, Form16, Form16Entries,
                      ComponentValue)
@@ -34,10 +35,11 @@ class PayRunAdmin(admin.ModelAdmin):
     list_display = ('display_month_name', 'year', 'status', 'created_by')
     list_filter = ('status', 'month', 'year')
     search_fields = ('status', 'get_month_name', 'year')
-    readonly_fields = ('status', 'created_at')
+    readonly_fields = ('status', 'created_at','error_log_summary')
     ordering = ['-created_at']
     actions = ['run_payrun', 'approve_payrun', 'reject_payrun']
     form = PayRunForm
+
 
     def add_view(self, request, form_url='', extra_context=None):
         if is_payrun_exists(request):
@@ -63,6 +65,17 @@ class PayRunAdmin(admin.ModelAdmin):
         run_payrun_action(self, request, queryset)
 
     run_payrun.short_description = 'Run selected payrun'
+
+    def has_errors(self, obj):
+        return bool(obj.error_log)
+    has_errors.boolean = True
+
+    def error_log_summary(self, obj):
+        if not obj.error_log:
+            return "-"
+        return format_html("<pre>{}</pre>", obj.error_log)
+    error_log_summary.short_description = 'Error Log'
+
 
 
 class EarningsInline(admin.TabularInline):
@@ -157,8 +170,16 @@ class PayRecordRegisterAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             return qs  # show everything, even unapproved
 
-        qs = restrict_queryset_by_group(qs, request.user, payee_field='payee')
-        return qs.filter(pay_run__status='approved')
+        # Check if user is in a restricted group
+        is_restricted = request.user.groups.filter(name__in=RESTRICTED_GROUPS).exists()
+
+        if is_restricted:
+            # Restrict to records linked to this user + filter for approved pay_runs
+            qs = restrict_queryset_by_group(qs, request.user, payee_field='payee')
+            return qs.filter(pay_run__status='approved')
+
+        # User is not in restricted groups => full access
+        return qs
 
     def get_total_earnings(self, obj):
         return sum(c.value for c in obj.components.filter(

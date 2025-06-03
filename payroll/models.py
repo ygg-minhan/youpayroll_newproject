@@ -57,10 +57,16 @@ class PayRun(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE,
                                    editable=False, null=True, blank=True)
+    error_log = models.TextField(blank=True, null=True,
+                                 help_text="shows only if any error occur "
+                                           "in payees data ")
 
     class Meta:
         verbose_name = _("Pay Run")
         verbose_name_plural = _("Pay Runs")
+
+    def get_error_log_lines(self):
+        return self.error_log.splitlines() if self.error_log else []
 
     def display_month_name(self):
         return get_month_name(self.month)
