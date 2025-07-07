@@ -48,7 +48,7 @@ deployment:
         requests: 300Mi
         limits: 400Mi
       cpu:
-        requests: 150m
+        requests: 10m
       volumeMounts:
         - mountPath: '/ygag/logs/'
           name: 'ygag-youpayroll-[JIRA_ID]-qa-worker-logs'

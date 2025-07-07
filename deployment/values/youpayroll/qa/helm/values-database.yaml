@@ -62,10 +62,10 @@ deployment:
           value: '/run/entrypoint/secrets/postgres-database-user'
       port: 5432
       memory:
-        requests: 100Mi
+        requests: 75Mi
         limits: 300Mi
       cpu:
-        requests: 100m
+        requests: 45m
         limits: 1000m
       livenessProbe:
         command: '["pg_isready"]'

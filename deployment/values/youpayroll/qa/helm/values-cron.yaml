@@ -45,10 +45,10 @@ deployment:
       image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpayroll/backend-app:[BUILD_TAG]'
       command: '["sh", "-c", "/bin/cat /vault/secrets/application.env /vault/secrets/application-devops.env > /etc/profile.d/application-env.sh ; sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /etc/profile.d/application-env.sh ; source /etc/profile.d/application-env.sh ; sh /ygag/deployment/app/cron-entrypoint.sh"]'
       memory:
-        requests: 200Mi
+        requests: 120Mi
         limits: 300Mi
       cpu:
-        requests: 50m
+        requests: 10m
       volumeMounts:
         - mountPath: '/ygag/logs/'
           name: 'ygag-youpayroll-[JIRA_ID]-qa-cron-logs'
