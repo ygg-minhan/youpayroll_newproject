@@ -51,7 +51,7 @@ deployment:
     default:
       name: 'database'
       imagePullPolicy: 'IfNotPresent'
-      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpayroll/backend-database:latest'
+      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpayroll/backend-database:16-latest'
       command: '[]'
       env:
         - name: 'POSTGRES_PASSWORD_FILE'
