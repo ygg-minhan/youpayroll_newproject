@@ -6,6 +6,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
+    path('api/configs/', include('configs.urls')),
+    path('api/payees/', include('payees.urls')),
+    path('api/payroll/', include('payroll.urls')),
     path('accounts/', include('allauth.urls')), # For Social Login
 ]
 

@@ -1,429 +1,215 @@
 import React, { useState, useEffect } from 'react';
-import { Folder, AlertTriangle, Moon, Sun, ArrowRight, X, CheckCircle, Upload, FileText, ChevronRight } from 'lucide-react';
+import { Bell, CheckCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useNotification } from '../context/NotificationContext';
 
-// --- Sub-Modals for Admin Workflow ---
-
-// 1. Admin Update Notification Modal
-const AdminUpdateModal = ({ isOpen, onAcknowledge, onReject }) => {
-   if (!isOpen) return null;
-   return (
-      <div className="modal-overlay">
-         <div className="modal-content admin-modal">
-            <h2 className="admin-title">Let’s get this done!</h2>
-            <p className="admin-text">
-               Please review admin updates to your profile and provide a confirmation screenshot for payment processing.
-            </p>
-            <div className="modal-actions">
-               <button onClick={onReject} className="reject-btn">Reject</button>
-               <button onClick={onAcknowledge} className="acknowledge-btn">Acknowledge</button>
+// --- Simple Notification Modal (Step 1) ---
+const NotificationModal = ({ isOpen, notification, onAcknowledge, onClose }) => {
+    if (!isOpen || !notification) return null;
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content mobile-modal pop-in">
+                <button className="close-corner-btn" onClick={onClose}><X size={20} /></button>
+                <h2 className="modal-title">{notification.title}</h2>
+                <p className="modal-text">{notification.message}</p>
+                <div className="modal-actions-centered">
+                    <button onClick={() => onAcknowledge(notification)} className="btn-primary-rect-full">View Profile & Confirm</button>
+                </div>
             </div>
-         </div>
-         <style>{`
-                .admin-modal { padding: 2rem; max-width: 400px; text-align: left; }
-                .admin-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; color: var(--text-primary); }
-                .admin-text { color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.6; }
-                .reject-btn { color: #d946ef; background: white; border: 1px solid #d946ef; padding: 0.75rem 1.5rem; border-radius: var(--radius-md); font-weight: 600; flex: 1; cursor: pointer; }
-                .acknowledge-btn { color: white; background: #d946ef; border: none; padding: 0.75rem 1.5rem; border-radius: var(--radius-md); font-weight: 600; flex: 1; cursor: pointer; }
-            `}</style>
-      </div>
-   );
+        </div>
+    );
 };
 
-// 2. Reject Reason Modal
-const RejectModal = ({ isOpen, onClose, onSubmit }) => {
-   if (!isOpen) return null;
-   const [reason, setReason] = useState('');
-   const charCount = reason.length;
-
-   return (
-      <div className="modal-overlay">
-         <div className="modal-content reject-modal">
-            <h2 className="admin-title">Incorrect Modifications</h2>
-            <p className="admin-text">
-               Please specify the reason for the rejection, and the admin will review and make the required changes.
-            </p>
-            <textarea
-               className="reason-input"
-               placeholder="Type your message here..."
-               maxLength={300}
-               value={reason}
-               onChange={(e) => setReason(e.target.value)}
-            />
-            <div className="char-count">{charCount}/300</div>
-
-            <div className="modal-actions-right">
-               <button onClick={onClose} className="cancel-link-btn">Cancel</button>
-               <button
-                  onClick={() => onSubmit(reason)}
-                  className="submit-btn"
-                  disabled={!reason.trim()}
-               >
-                  Submit
-               </button>
-            </div>
-         </div>
-         <style>{`
-                .reject-modal { padding: 2rem; max-width: 450px; }
-                .reason-input { width: 100%; height: 120px; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); resize: none; margin-bottom: 0.5rem; font-family: inherit; }
-                .char-count { text-align: right; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1.5rem; }
-                .modal-actions-right { display: flex; justify-content: flex-end; gap: 1rem; }
-                .cancel-link-btn { color: #d946ef; background: none; border: none; font-weight: 600; cursor: pointer; }
-                .submit-btn { background: #d946ef; color: white; padding: 0.5rem 1.5rem; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; }
-                .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-            `}</style>
-      </div>
-   );
-};
-
-// 3. Updated Details Modal (Shown after Acknowledge)
-const UpdatedDetailsModal = ({ isOpen, onClose }) => {
-   if (!isOpen) return null;
-   return (
-      <div className="modal-overlay">
-         <div className="modal-content details-modal">
-            <button className="close-corner-btn" onClick={onClose}><X size={20} /></button>
-            <h3>Take a screenshot of the updated profile</h3>
-            <p className="sub-text">Upload the screenshot in the pending document section on the Home page to process the payment</p>
-
-            <div className="updated-field-highlight">
-               <div className="field-label">Account Number</div>
-               <div className="field-value">1234567890 <span className="highlight-badge">Updated</span></div>
-            </div>
-         </div>
-         <style>{`
-                .details-modal { padding: 2.5rem 2rem; max-width: 400px; text-align: center; position: relative; }
-                .close-corner-btn { position: absolute; top: 1rem; right: 1rem; color: var(--text-secondary); }
-                .details-modal h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.5rem; }
-                .sub-text { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem; }
-                .updated-field-highlight { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1.5rem; border-radius: var(--radius-md); }
-                .field-label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
-                .field-value { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-                .highlight-badge { background: #22c55e; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; }
-            `}</style>
-      </div>
-   );
-};
-
-// 4. Upload Screenshot Modal (Action Required)
-const UploadScreenshotModal = ({ isOpen, onClose, onUpload }) => {
-   if (!isOpen) return null;
-   return (
-      <div className="modal-overlay">
-         <div className="modal-content upload-modal">
-            <button className="close-corner-btn" onClick={onClose}><X size={20} /></button>
-            <div className="status-badge-container">
-               <span className="status-badge alert">Action required!</span>
-            </div>
-
-            <h2 className="admin-title">Action Required!</h2>
-            <p className="admin-text">
-               Please review admin updates to your profile and provide a confirmation screenshot for payment processing.
-            </p>
-
-            <div className="upload-area">
-               <Upload size={32} className="upload-icon" />
-               <p>Click to upload screenshot</p>
-               <span className="file-types">Supports JPG, PNG, SVG</span>
-               <input type="file" className="file-input-hidden" onChange={onUpload} />
-            </div>
-         </div>
-         <style>{`
-                .upload-modal { padding: 2.5rem 2rem; max-width: 450px; text-align: center; position: relative; }
-                .status-badge-container { display: flex; justify-content: flex-start; margin-bottom: 1rem; }
-                .status-badge.alert { color: #eab308; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; }
-                .upload-area { border: 2px dashed #cbd5e1; border-radius: var(--radius-lg); padding: 3rem; margin-top: 1.5rem; cursor: pointer; transition: all 0.2s; position: relative; }
-                .upload-area:hover { border-color: #d946ef; background: #fdf4ff; }
-                .upload-icon { color: #d946ef; margin-bottom: 1rem; }
-                .file-types { font-size: 0.75rem; color: var(--text-secondary); display: block; margin-top: 0.5rem; }
-                .file-input-hidden { position: absolute; top:0; left:0; width:100%; height:100%; opacity: 0; cursor: pointer; }
-            `}</style>
-      </div>
-   );
-};
-
-
-// --- Main Overview Component ---
+const SuccessBanner = ({ message, onClose }) => (
+    <div className="success-banner pop-down">
+        <div className="banner-content">
+            <CheckCircle size={20} color="white" />
+            <span>{message}</span>
+        </div>
+        <button className="banner-close" onClick={onClose}><X size={16} /></button>
+    </div>
+);
 
 const Overview = () => {
-   const { user, isDarkMode, toggleDarkMode } = useAuth();
+    const { user } = useAuth();
+    const { actionRequiredNotification } = useNotification();
+    const navigate = useNavigate();
+    const location = useLocation();
 
-   // --- Admin Workflow State ---
-   const [hasAdminUpdate, setHasAdminUpdate] = useState(true); // Mock: Admin made an update
-   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+    const [activeNotification, setActiveNotification] = useState(null);
+    const [showSuccess, setShowSuccess] = useState(!!location.state?.success);
 
-   // Reject Flow
-   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+    useEffect(() => {
+        if (actionRequiredNotification && !activeNotification) {
+            setActiveNotification(actionRequiredNotification);
+        }
+    }, [actionRequiredNotification, activeNotification]);
 
-   // Acknowledge Flow
-   const [isUpdatedDetailsOpen, setIsUpdatedDetailsOpen] = useState(false);
-   const [isPendingDocActive, setIsPendingDocActive] = useState(false); // Enable tile
+    useEffect(() => {
+        if (showSuccess) {
+            const timer = setTimeout(() => setShowSuccess(false), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [showSuccess]);
 
-   // Upload Flow
-   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-   const [uploadSuccess, setUploadSuccess] = useState(false);
+    const handleInitialAcknowledge = (notif) => {
+        setActiveNotification(null);
+        navigate('/profile', { state: { triggerAction: true, notificationId: notif.id } });
+    };
 
-   useEffect(() => {
-      // Time Update
-      const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return (
+        <div className="overview-page">
+            {showSuccess && <SuccessBanner message="Action completed successfully" onClose={() => setShowSuccess(false)} />}
 
-      // Greeting Logic
-      const hour = new Date().getHours();
-      if (hour >= 5 && hour < 12) setGreeting('Good Morning');
-      else if (hour >= 12 && hour < 18) setGreeting('Good Afternoon');
-      else setGreeting('Good Evening');
+            <div className="mobile-hero-v4">
+                <div className="mobile-avatar-circle" onClick={() => navigate('/profile')}>
+                    <img src={user?.avatar || "https://i.pravatar.cc/150?u=paul"} alt="user" />
+                </div>
+                <h1 className="mobile-welcome">Welcome {user?.name?.split(' ')[0] || 'User'}</h1>
+            </div>
 
-      // Mock: Show Admin Modal on load if updates exist
-      if (hasAdminUpdate && !isPendingDocActive && !uploadSuccess) {
-         const timeout = setTimeout(() => setIsAdminModalOpen(true), 1000);
-         return () => clearTimeout(timeout);
-      }
-
-      return () => clearInterval(timer);
-   }, [hasAdminUpdate, isPendingDocActive, uploadSuccess]);
-
-   const navigate = useNavigate();
-   const [currentTime, setCurrentTime] = useState(new Date());
-   const [greeting, setGreeting] = useState('Good Morning');
-
-   // --- Handlers ---
-
-   const handleAcknowledge = () => {
-      setIsAdminModalOpen(false);
-      setIsUpdatedDetailsOpen(true);
-      // After seeing details, the "Pending Documents" tile becomes active
-      setIsPendingDocActive(true);
-   };
-
-   const handleReject = () => {
-      setIsAdminModalOpen(false);
-      setIsRejectModalOpen(true);
-   };
-
-   const handleSubmitRejection = (reason) => {
-      console.log("Rejected with reason:", reason);
-      setIsRejectModalOpen(false);
-      setHasAdminUpdate(false); // Clear update state as it's rejected
-      // Ideally show a "Submitted" toast here
-   };
-
-   const handlePendingDocClick = () => {
-      if (isPendingDocActive) {
-         setIsUploadModalOpen(true);
-      }
-   };
-
-   const handleUpload = (e) => {
-      if (e.target.files[0]) {
-         // Mock Upload
-         setTimeout(() => {
-            setIsUploadModalOpen(false);
-            setUploadSuccess(true);
-            setIsPendingDocActive(false); // Task done
-            setHasAdminUpdate(false); // Clear notification
-         }, 1000);
-      }
-   };
-
-   const formattedDate = currentTime.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-
-   return (
-      <div className={`overview-page ${isDarkMode ? 'dark' : ''}`}>
-         <div className="content-left">
-            {/* Header */}
-            <header className="header-section">
-               <div className="greeting-container">
-                  <span className="wave">👋</span>
-                  <h2>Hi {user?.name?.split(' ')[0] || 'User'}, {greeting}</h2>
-               </div>
-               <h1 className="hero-title">Have a Productive day!</h1>
-               <p className="current-date">{formattedDate}</p>
+            <header className="overview-header desktop-only">
+                <div className="header-text">
+                    <p className="welcome-tag">👋 Welcome, {user?.name?.split(' ')[0] || 'Paul'}!</p>
+                    <h1 className="page-title">Ready to dive in? What's your first move?</h1>
+                    <p className="current-date">{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                </div>
             </header>
 
-            {/* Upload Success Message */}
-            {uploadSuccess && (
-               <div className="success-banner pop-in">
-                  <div className="success-content">
-                     <CheckCircle size={24} className="text-white" />
-                     <div>
-                        <h3>Document uploaded successfully</h3>
-                        <p>Admin will review your submission shortly.</p>
-                     </div>
-                  </div>
-               </div>
-            )}
-
-            {/* Dashboard Cards */}
-            <div className="cards-grid">
-               {/* Payslips Card (Navigates to /payslips) */}
-               <div className="dashboard-card payslip-card" onClick={() => navigate('/payslips')}>
-                  <div className="card-content">
-                     <h3>Your</h3>
-                     <h2>Payslips</h2>
-                  </div>
-                  <div className="card-icon-container bg-purple">
-                     <Folder size={32} color="white" />
-                     <div className="add-badge">+</div>
-                  </div>
-               </div>
-
-               {/* Pending Documents Card */}
-               <div
-                  className={`dashboard-card documents-card ${isPendingDocActive ? 'active-action' : 'disabled-card'}`}
-                  onClick={handlePendingDocClick}
-               >
-                  <div className="card-content">
-                     <h3>Pending</h3>
-                     <h2>Documents</h2>
-                     {isPendingDocActive && <span className="action-tag">Action Required</span>}
-                  </div>
-                  <div className="card-icon-container bg-pink">
-                     <AlertTriangle size={32} color="white" />
-                  </div>
-               </div>
-            </div>
-         </div>
-
-         {/* Right Profile Sidebar */}
-         <aside className="profile-section">
-            <div className="profile-header-top">
-               <h3>Profile Summary</h3>
-               <button className="theme-toggle" onClick={toggleDarkMode}>
-                  {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
-               </button>
+            <div className="dashboard-grid">
+                <div className="action-card-small" onClick={() => navigate('/payslips')}>
+                    <div className="card-content">
+                        <h2>Your Payslips</h2>
+                        <p className="card-desc">View and download your monthly salary statements.</p>
+                    </div>
+                    <div className="card-icon-container">
+                        <svg width="100" height="100" viewBox="0 0 100 100" fill="none">
+                            <rect x="25" y="30" width="50" height="40" rx="8" fill="#B800C4" />
+                            <circle cx="30" cy="70" r="10" fill="#fdf4ff" stroke="#B800C4" strokeWidth="2" />
+                            <path d="M26 70H34M30 66V74" stroke="#B800C4" strokeWidth="2" strokeLinecap="round" />
+                            <rect x="35" y="20" width="30" height="20" rx="4" fill="#fdf4ff" opacity="0.8" />
+                        </svg>
+                    </div>
+                </div>
+                <div className="action-card-small" onClick={() => navigate('/documents')}>
+                    <div className="card-content">
+                        <h2>Pending Documents</h2>
+                        <p className="card-desc">Complete requirements and upload missing files.</p>
+                    </div>
+                    <div className="card-icon-container">
+                        <svg width="100" height="100" viewBox="0 0 100 100" fill="none">
+                            <path d="M20 75L50 20L80 75H20Z" fill="#B800C4" />
+                            <rect x="47" y="45" width="6" height="15" rx="3" fill="white" />
+                            <circle cx="50" cy="65" r="3" fill="white" />
+                        </svg>
+                    </div>
+                </div>
+                <div className="action-card-large" onClick={() => window.open('https://yougotagift.zohodesk.in/portal/en/signin', '_blank')}>
+                    <div className="card-content">
+                        <h2>HR Ticketing System</h2>
+                        <p className="card-desc">Need help? Raise a support ticket directly with the HR team.</p>
+                        <button className="btn-request">Request Assistance</button>
+                    </div>
+                    <div className="card-icon-container">
+                        <svg width="120" height="100" viewBox="0 0 120 100" fill="none">
+                            <rect x="30" y="34" width="40" height="42" rx="12" fill="#FCE7F3" />
+                            <rect x="54" y="30" width="64" height="48" rx="18" fill="#B800C4" />
+                            <line x1="106" y1="38" x2="90" y2="54" stroke="white" strokeWidth="8" strokeLinecap="round" />
+                            <circle cx="83" cy="62" r="5.5" fill="white" />
+                        </svg>
+                    </div>
+                </div>
             </div>
 
-            <div className="profile-card-mini">
-               <div className="avatar-container-mini">
-                  <img src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=0D8ABC&color=fff&size=128`} alt="Profile" className="avatar-mini" />
-               </div>
-               <h2 className="profile-name">{user?.name || 'User'}</h2>
-               <p className="profile-role">{user?.role || 'Consultant'}</p>
+            <NotificationModal
+                isOpen={!!activeNotification}
+                notification={activeNotification}
+                onAcknowledge={handleInitialAcknowledge}
+                onClose={() => setActiveNotification(null)}
+            />
 
-               <Link to="/profile" className="view-profile-btn">
-                  View Full Profile <ArrowRight size={16} />
-               </Link>
-            </div>
+            <style>{`
+                .overview-page { display: flex; flex-direction: column; gap: 3rem; }
+                
+                .mobile-hero-v4 { display: none; flex-direction: column; align-items: center; text-align: center; margin-bottom: 0.5rem; padding: 1rem 0; }
+                .mobile-avatar-circle { width: 64px; height: 64px; border-radius: 50%; overflow: hidden; margin-bottom: 1rem; border: 2.5px solid var(--card-bg); box-shadow: 0 8px 16px var(--shadow-color); cursor: pointer; }
+                .mobile-avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+                .mobile-welcome { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
 
-            <div className="quick-stats-card">
-               <h3>Quick Stats</h3>
-               <div className="stat-row">
-                  <span>Leave Balance</span>
-                  <span className="stat-value">12 Days</span>
-               </div>
-               <div className="stat-row">
-                  <span>Next Payday</span>
-                  <span className="stat-value">Oct 31</span>
-               </div>
-            </div>
-
-            <footer className="profile-footer">
-               UCL Cyberpark branch, Nellikode P.O, Calicut 673016
-            </footer>
-         </aside>
-
-         {/* --- Modals --- */}
-         <AdminUpdateModal
-            isOpen={isAdminModalOpen}
-            onAcknowledge={handleAcknowledge}
-            onReject={handleReject}
-         />
-
-         <RejectModal
-            isOpen={isRejectModalOpen}
-            onClose={() => setIsRejectModalOpen(false)}
-            onSubmit={handleSubmitRejection}
-         />
-
-         <UpdatedDetailsModal
-            isOpen={isUpdatedDetailsOpen}
-            onClose={() => setIsUpdatedDetailsOpen(false)}
-         />
-
-         <UploadScreenshotModal
-            isOpen={isUploadModalOpen}
-            onClose={() => setIsUploadModalOpen(false)}
-            onUpload={handleUpload}
-         />
-
-         <style>{`
-                /* Existing Styles preserved */
-                .overview-page {
-                   display: grid;
-                   grid-template-columns: 2fr 1fr;
-                   gap: 2rem;
-                   height: 100%;
+                @media (max-width: 768px) {
+                    .mobile-hero-v4 { display: flex; }
+                    .desktop-only { display: none !important; }
+                    .overview-page { gap: 1.25rem; padding-bottom: 2rem; }
+                    .dashboard-grid { gap: 0.85rem; }
+                    .action-card-small, .action-card-large { padding: 1.25rem; border-radius: 18px; min-height: 140px; align-items: center; }
+                    .card-content h2 { font-size: 1.1rem; max-width: 150px; margin-bottom: 0.25rem; line-height: 1.3; }
+                    .card-desc { display: none; }
+                    .card-icon-container { flex-shrink: 0; }
+                    .card-icon-container svg { width: 70px; height: 70px; }
+                    .btn-request { padding: 0.6rem 1.5rem; font-size: 0.85rem; border-radius: 10px; }
                 }
 
-                .content-left {
-                   display: flex;
-                   flex-direction: column;
-                   gap: 3rem;
+                .overview-header { display: flex; justify-content: space-between; align-items: flex-start; }
+                .welcome-tag { font-size: 1.1rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.5rem; }
+                .page-title { font-size: 2.8rem; font-weight: 800; color: var(--text-primary); line-height: 1.1; max-width: 600px; }
+
+                .dashboard-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 2.5rem;
+                    margin-top: 2rem;
+                    max-width: 900px;
+                }
+
+                .action-card-small, .action-card-large { 
+                    background: var(--card-bg); 
+                    border-radius: 28px; 
+                    padding: 2.5rem 3rem; 
+                    display: flex; 
+                    justify-content: space-between; 
+                    align-items: center; 
+                    cursor: pointer; 
+                    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); 
+                    box-shadow: 0 4px 25px var(--shadow-color);
+                    border: 1px solid var(--border-color);
+                }
+                .action-card-small:hover, .action-card-large:hover {
+                    box-shadow: 0 15px 40px var(--shadow-color);
+                    transform: translateY(-6px);
+                    border-color: rgba(184, 0, 196, 0.2);
+                }
+                .action-card-large { grid-column: auto; }
+                .card-content h2 { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem; }
+                .card-desc { font-size: 0.95rem; color: var(--text-secondary); font-weight: 500; margin-bottom: 1.5rem; max-width: 300px; line-height: 1.5; }
+                .btn-request { background: #B800C4; color: white; border: none; padding: 0.8rem 2.5rem; border-radius: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(184, 0, 196, 0.2); }
+                .btn-request:hover { background: #a000aa; transform: scale(1.02); }
+
+                /* Notifications */
+                .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1.5rem; }
+                .mobile-modal { max-width: 440px; width: 100%; padding: 2.5rem; border-radius: 24px; background: var(--card-bg); position: relative; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid var(--border-color); }
+                .modal-title { font-size: 1.75rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem; }
+                .modal-text { color: var(--text-secondary); font-size: 1rem; line-height: 1.6; margin-bottom: 2.5rem; }
+                .modal-actions-centered { display: flex; justify-content: center; }
+                .btn-primary-rect-full { width: 100%; background: #B800C4; color: white; font-weight: 700; font-size: 1rem; padding: 1.1rem; border-radius: 14px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(184, 0, 196, 0.3); }
+                .close-corner-btn { position: absolute; top: 1.5rem; right: 1.5rem; color: var(--text-secondary); background: none; border: none; cursor: pointer; }
+
+                .success-banner { position: fixed; top: 2rem; left: 50%; transform: translateX(-50%); background: #4ADE80; color: white; padding: 0.75rem 2rem; border-radius: 2rem; display: flex; align-items: center; gap: 1rem; z-index: 3000; box-shadow: 0 10px 15px rgba(0,0,0,0.1); width: max-content; max-width: 90%; }
+                .banner-content { display: flex; align-items: center; gap: 0.75rem; font-weight: 600; font-size: 0.9rem; }
+                .banner-close { background: none; border: none; color: white; cursor: pointer; }
+
+                @media (max-width: 768px) {
+                    .mobile-modal { padding: 2rem 1.5rem; }
+                    .success-banner { top: 1rem; padding: 0.75rem 1.5rem; }
                 }
                 
-                /* Keep previous header styles */
-                .greeting-container { display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 500; font-size: 1.1rem; }
-                .hero-title { font-size: 2.5rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem; }
-                .current-date { color: var(--text-secondary); font-size: 1rem; }
-
-                /* Card Styles */
-                .cards-grid { display: flex; flex-direction: column; gap: 2rem; }
-                .dashboard-card {
-                   background: var(--card-bg);
-                   border-radius: var(--radius-lg);
-                   padding: 2rem;
-                   display: flex;
-                   justify-content: space-between;
-                   align-items: center;
-                   box-shadow: var(--shadow-sm);
-                   min-height: 180px;
-                   transition: transform 0.2s;
-                   cursor: pointer;
-                }
-                .dashboard-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
-                
-                .card-content h3 { font-size: 1.5rem; font-weight: 600; color: var(--text-primary); }
-                .card-content h2 { font-size: 2rem; font-weight: 800; color: var(--text-primary); }
-                
-                .card-icon-container { width: 80px; height: 60px; border-radius: 20px; display: flex; align-items: center; justify-content: center; position: relative; }
-                .bg-purple { background: #d946ef; }
-                .bg-pink { background: #db2777; }
-                .add-badge { position: absolute; bottom: -5px; left: -5px; background: white; width: 20px; height: 20px; border-radius: 50%; color: #d946ef; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
-
-                /* Pending Document Logic */
-                .disabled-card { opacity: 0.6; cursor: default; }
-                .disabled-card:hover { transform: none; box-shadow: var(--shadow-sm); }
-                .active-action { border: 2px solid #eab308; background: #fefce8; }
-                .action-tag { display: inline-block; background: #eab308; color: white; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 700; margin-top: 0.5rem; }
-
-                /* Success Banner */
-                .success-banner { background: #22c55e; color: white; padding: 1.5rem; border-radius: var(--radius-lg); margin-bottom: 1rem; box-shadow: var(--shadow-md); animation: slideDown 0.5s ease-out; }
-                .success-content { display: flex; align-items: center; gap: 1rem; }
-                .success-content h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem; }
-                .success-content p { font-size: 0.9rem; opacity: 0.9; }
-                @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-
-                /* Profile Sidebar (Right) */
-                .profile-section { background: var(--card-bg); padding: 2rem; border-left: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 2rem; }
-                .profile-header-top { display: flex; justify-content: space-between; align-items: center; }
-                .profile-header-top h3 { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
-                .profile-card-mini { text-align: center; background: var(--bg-color); padding: 2rem; border-radius: var(--radius-lg); }
-                .avatar-container-mini { width: 100px; height: 100px; margin: 0 auto 1rem; }
-                .avatar-mini { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; box-shadow: var(--shadow-sm); }
-                .profile-name { font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
-                .profile-role { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1.5rem; }
-                .view-profile-btn { display: inline-flex; align-items: center; gap: 0.5rem; color: #d946ef; font-weight: 600; font-size: 0.9rem; padding: 0.5rem 1rem; border: 1px solid #d946ef; border-radius: var(--radius-md); transition: all 0.2s; }
-                .view-profile-btn:hover { background: #d946ef; color: white; }
-                .quick-stats-card { background: var(--bg-color); padding: 1.5rem; border-radius: var(--radius-lg); }
-                .quick-stats-card h3 { font-size: 0.9rem; margin-bottom: 1rem; }
-                .stat-row { display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 0.875rem; color: var(--text-secondary); }
-                .stat-value { font-weight: 600; color: var(--text-primary); }
-                .profile-footer { font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: auto; }
-                .theme-toggle { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem; border-radius: 50%; cursor: pointer; }
+                .pop-in { animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+                @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+                .pop-down { animation: popDown 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+                @keyframes popDown { from { opacity: 0; transform: translate(-50%, -20px); } to { opacity: 1; transform: translate(-50%, 0); } }
             `}</style>
-      </div>
-   );
+        </div>
+    );
 };
 
 export default Overview;

@@ -3,12 +3,20 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
-from .models import Profile, Payslip, Document, AdminNotification, WikiCategory, WikiPage
+from .models import Profile, Payslip, Document, AdminNotification, WikiCategory, WikiPage, UserNotification
 from .serializers import (
     ProfileSerializer, PayslipSerializer, 
     DocumentSerializer, AdminNotificationSerializer,
-    WikiCategorySerializer, WikiPageSerializer
+    WikiCategorySerializer, WikiPageSerializer,
+    UserNotificationSerializer
 )
+
+class UserNotificationViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserNotificationSerializer
+
+    def get_queryset(self):
+        return UserNotification.objects.filter(user=self.request.user, is_read=False).order_by('-created_at')
 
 class UserProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -55,8 +63,13 @@ class GetProfileByEmailView(APIView):
 
     def get(self, request, email):
         profile = get_object_or_404(Profile, user__email=email)
+        from rest_framework.authtoken.models import Token
+        token, _ = Token.objects.get_or_create(user=profile.user)
+        
         serializer = ProfileSerializer(profile)
-        return Response(serializer.data)
+        data = serializer.data
+        data['token'] = token.key
+        return Response(data)
 
 class AdminNotificationView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -84,4 +97,7 @@ class WikiPageViewSet(viewsets.ModelViewSet):
         if WikiPage.objects.filter(slug=slug).exists():
             import uuid
             slug = f"{slug}-{uuid.uuid4().hex[:6]}"
-        serializer.save(author=self.request.user, slug=slug)
+        
+        # Only set author if user is authenticated, otherwise set to None
+        author = self.request.user if self.request.user.is_authenticated else None
+        serializer.save(author=author, slug=slug)

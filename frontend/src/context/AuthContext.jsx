@@ -9,21 +9,32 @@ export const AuthProvider = ({ children }) => {
     const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('theme') === 'dark');
 
     useEffect(() => {
-        // Check localStorage on mount
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-            setIsAuthenticated(true);
-        }
+        const initializeAuth = async () => {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+                const parsedUser = JSON.parse(storedUser);
+                setUser(parsedUser);
+                setIsAuthenticated(true);
 
-        // Initial Theme Apply
-        if (isDarkMode) {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
-        }
+                // Background sync with backend to get latest profile updates
+                try {
+                    await login(parsedUser.email);
+                } catch (err) {
+                    console.error('Failed to sync profile on load:', err);
+                }
+            }
 
-        setLoading(false);
+            // Initial Theme Apply
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+
+            setLoading(false);
+        };
+
+        initializeAuth();
     }, []);
 
     const toggleDarkMode = () => {
@@ -43,11 +54,22 @@ export const AuthProvider = ({ children }) => {
             const response = await fetch(`http://127.0.0.1:8000/api/profile-by-email/${email}/`);
             if (response.ok) {
                 const profileData = await response.json();
+
+                // Construct full URL for profile picture
+                let avatarUrl = profileData.profile_picture;
+                if (avatarUrl && !avatarUrl.startsWith('http')) {
+                    avatarUrl = `http://127.0.0.1:8000${avatarUrl}`;
+                }
+
+                const firstName = profileData.user?.first_name || '';
+                const lastName = profileData.user?.last_name || '';
+                const fullName = `${firstName} ${lastName}`.trim();
+
                 const userObj = {
-                    email: profileData.user.email,
-                    name: `${profileData.user.first_name} ${profileData.user.last_name}`.trim() || profileData.user.username,
+                    email: profileData.user?.email || email,
+                    name: fullName || profileData.user?.username || 'User',
                     role: profileData.designation || 'Consultant',
-                    avatar: profileData.profile_picture || `https://ui-avatars.com/api/?name=${profileData.user.first_name}+${profileData.user.last_name}&background=0D8ABC&color=fff`,
+                    avatar: avatarUrl || `https://ui-avatars.com/api/?name=${firstName || 'User'}+${lastName}&background=B800C4&color=fff`,
                     consultantId: profileData.consultant_id,
                     gender: profileData.gender,
                     dob: profileData.dob,
@@ -68,19 +90,12 @@ export const AuthProvider = ({ children }) => {
                 setUser(userObj);
                 setIsAuthenticated(true);
                 localStorage.setItem('user', JSON.stringify(userObj));
+                if (profileData.token) {
+                    localStorage.setItem('token', profileData.token);
+                }
                 return true;
             } else {
-                // Fallback for demo if user not found in DB
-                const mockUser = {
-                    email,
-                    name: 'Paul Barber',
-                    role: 'Consultant',
-                    avatar: 'https://ui-avatars.com/api/?name=Paul+Barber&background=0D8ABC&color=fff'
-                };
-                setUser(mockUser);
-                setIsAuthenticated(true);
-                localStorage.setItem('user', JSON.stringify(mockUser));
-                return true;
+                return false;
             }
         } catch (error) {
             console.error('Login error:', error);

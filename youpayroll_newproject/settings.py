@@ -31,6 +31,11 @@ INSTALLED_APPS = [
     
     # Local apps
     'core',
+    'configs',
+    'payees',
+    'payroll',
+    'auditlog',
+    'django_celery_results',
 ]
 
 SITE_ID = 1
@@ -45,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware', # Added AllAuth middleware
+    'auditlog.middleware.AuditlogMiddleware',
 ]
 
 ROOT_URLCONF = 'youpayroll_newproject.urls'

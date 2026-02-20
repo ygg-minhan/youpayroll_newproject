@@ -27,258 +27,247 @@ const ProfileImageModal = ({ isOpen, onClose, currentImage, onRemove, onSave }) 
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content profile-modal">
+            <div className="modal-content profile-modal pop-in">
                 {/* Header */}
                 <div className="modal-header">
-                    <h2>
+                    <h2 className="modal-title-custom">
                         {view === 'main' && 'Profile Picture'}
-                        {view === 'change' && 'New Profile Picture'}
+                        {view === 'change' && 'Profile Picture'}
                         {view === 'remove' && 'Remove Profile Picture?'}
                     </h2>
-                    <button className="close-btn" onClick={handleClose}>
+                    <button className="close-corner-btn-purple" onClick={handleClose}>
                         <X size={20} />
                     </button>
                 </div>
 
-                {view === 'main' && (
-                    <div className="modal-body-content">
-                        <div className="image-preview-large">
-                            <img src={currentImage} alt="Current Profile" />
-                        </div>
-
-                        <p className="modal-subtitle">
-                            To make your profile unique, you can easily change or remove your profile picture.
-                        </p>
-
-                        <div className="modal-actions">
-                            <button onClick={() => setView('remove')} className="remove-btn">Remove</button>
-                            <label className="change-btn">
-                                Change
-                                <input type="file" hidden accept="image/*" onChange={handleFileChange} />
-                            </label>
-                        </div>
-                    </div>
-                )}
-
-                {view === 'change' && (
-                    <div className="modal-body-content">
-                        <div className="image-preview-large">
-                            <img src={selectedImage} alt="New Profile" />
-                        </div>
-
-                        <p className="modal-subtitle">
-                            Do you want to save this as your new profile picture?
-                        </p>
-
-                        <div className="modal-actions">
-                            <button onClick={() => { setView('main'); setSelectedImage(null); }} className="cancel-btn">Cancel</button>
-                            <button onClick={() => { onSave(selectedImage); handleClose(); }} className="save-btn-full">Save Changes</button>
-                        </div>
-                    </div>
-                )}
-
-                {view === 'remove' && (
-                    <div className="modal-body-content">
-                        <div className="remove-preview-container">
-                            <div className="img-circle">
-                                <img src={currentImage} alt="Old" />
+                <div className="modal-body-custom">
+                    {view === 'main' && (
+                        <>
+                            <div className="image-display-container">
+                                <img src={currentImage} alt="Profile" className="large-circle-img" />
                             </div>
-                            <ArrowRight className="arrow-icon" />
-                            <div className="img-circle placeholder-circle">
-                                <span>P</span>
+                            <p className="modal-description-text">
+                                To make your profile unique, you can easily change or remove your profile picture.
+                            </p>
+                            <div className="modal-actions-custom">
+                                <button onClick={() => setView('remove')} className="btn-outline-remove">Remove</button>
+                                <label className="btn-solid-purple">
+                                    Change
+                                    <input type="file" hidden accept="image/*" onChange={handleFileChange} />
+                                </label>
                             </div>
-                        </div>
+                        </>
+                    )}
 
-                        <p className="modal-subtitle">
-                            Your previous picture will be replaced with the new image.
-                        </p>
+                    {view === 'change' && (
+                        <>
+                            <div className="image-display-container">
+                                <img src={selectedImage} alt="New Profile" className="large-circle-img" />
+                            </div>
+                            <p className="modal-description-text">
+                                To make your profile unique, you can easily change or remove your profile picture.
+                            </p>
+                            <div className="modal-actions-custom">
+                                <button onClick={() => { setView('main'); setSelectedImage(null); }} className="btn-outline-cancel">Remove</button>
+                                <button onClick={() => { onSave(selectedImage); handleClose(); }} className="btn-solid-purple">Save</button>
+                            </div>
+                        </>
+                    )}
 
-                        <div className="modal-actions">
-                            <button onClick={() => setView('main')} className="cancel-btn">Cancel</button>
-                            <button onClick={() => { onRemove(); handleClose(); }} className="confirm-remove-btn">Remove</button>
-                        </div>
-                    </div>
-                )}
+                    {view === 'remove' && (
+                        <>
+                            <div className="remove-preview-flow">
+                                <div className="img-circle-small">
+                                    <img src={currentImage} alt="Old" />
+                                </div>
+                                <div className="flow-arrow">
+                                    <ArrowRight size={20} color="#B800C4" />
+                                </div>
+                                <div className="img-circle-small placeholder-bg">
+                                    <span>P</span>
+                                </div>
+                            </div>
+                            <p className="modal-description-text-small">
+                                Your previous picture will be replaced with the new image.
+                            </p>
+                            <div className="modal-actions-custom">
+                                <button onClick={() => setView('main')} className="btn-outline-cancel">Cancel</button>
+                                <button onClick={() => { onRemove(); handleClose(); }} className="btn-solid-red">Remove</button>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
             <style>{`
-        .profile-modal {
-           width: 100%;
-           max-width: 480px;
-           padding: 2rem;
-           background: white;
-           border-radius: var(--radius-lg);
-        }
-        
-        .modal-header {
-           display: flex;
-           justify-content: space-between;
-           align-items: center;
-           margin-bottom: 2rem;
-        }
-        
-        .modal-header h2 {
-           font-size: 1.5rem;
-           font-weight: 700;
-           color: var(--text-primary);
-           margin: 0;
-           text-align: left;
-        }
-        
-        .close-btn {
-           color: var(--text-secondary);
-           padding: 0.5rem;
-           border-radius: 50%;
-           transition: background 0.2s;
-        }
-        .close-btn:hover {
-            background: #f1f5f9;
-        }
-        
-        .modal-body-content {
-           text-align: center;
-        }
-        
-        .image-preview-large {
-           width: 140px;
-           height: 140px;
-           margin: 0 auto 1.5rem;
-           border-radius: 50%;
-           overflow: hidden;
-           border: 4px solid white;
-           box-shadow: var(--shadow-md);
-        }
-        
-        .image-preview-large img {
-           width: 100%;
-           height: 100%;
-           object-fit: cover;
-        }
-        
-        .modal-subtitle {
-           color: var(--text-secondary);
-           margin-bottom: 2rem;
-           font-size: 0.95rem;
-           line-height: 1.5;
-           padding: 0 1rem;
-        }
-        
-        .modal-actions {
-           display: flex;
-           gap: 1rem;
-        }
-        
-        button, label {
-            transition: transform 0.1s, opacity 0.2s;
-        }
-        button:active, label:active {
-            transform: scale(0.98);
-        }
+                .modal-overlay {
+                    position: fixed;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(0, 0, 0, 0.4);
+                    backdrop-filter: blur(4px);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 4000;
+                }
+                .profile-modal {
+                    background: white;
+                    width: 100%;
+                    max-width: 440px;
+                    border-radius: 32px;
+                    padding: 2.5rem;
+                    position: relative;
+                    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+                }
+                .modal-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 2rem;
+                }
+                .modal-title-custom {
+                    font-size: 1.75rem;
+                    font-weight: 800;
+                    color: #1e293b;
+                    margin: 0;
+                }
+                .close-corner-btn-purple {
+                    background: none;
+                    border: 1px solid #f1f5f9;
+                    color: #B800C4;
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .close-corner-btn-purple:hover {
+                    background: #fdf4ff;
+                    border-color: #fce7f3;
+                }
 
-        /* Styles for Main View Buttons */
-        .remove-btn {
-           flex: 1;
-           padding: 0.875rem;
-           border: 1px solid #e2e8f0; /* Light gray border */
-           background: white;
-           color: #ef4444; /* Red text */
-           border-radius: var(--radius-md);
-           font-weight: 600;
-           cursor: pointer;
-        }
-        .remove-btn:hover {
-            background: #fef2f2;
-            border-color: #fecaca;
-        }
-        
-        .change-btn {
-           flex: 1;
-           padding: 0.875rem;
-           background: #d946ef; /* Purple */
-           color: white;
-           border-radius: var(--radius-md);
-           font-weight: 600;
-           cursor: pointer;
-           display: flex;
-           align-items: center;
-           justify-content: center;
-        }
-        .change-btn:hover {
-            background: #c026d3;
-        }
+                .modal-body-custom {
+                    text-align: center;
+                }
+                .image-display-container {
+                    width: 160px;
+                    height: 160px;
+                    margin: 0 auto 2rem;
+                    border-radius: 50%;
+                    overflow: hidden;
+                }
+                .large-circle-img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                }
+                .modal-description-text {
+                    color: #64748b;
+                    font-size: 1rem;
+                    line-height: 1.6;
+                    margin-bottom: 2.5rem;
+                    padding: 0 1rem;
+                }
+                .modal-description-text-small {
+                    color: #64748b;
+                    font-size: 0.95rem;
+                    margin-bottom: 2.5rem;
+                }
 
-        /* Styles for Change/Remove Confirmation Buttons */
-        .cancel-btn {
-           flex: 1;
-           padding: 0.875rem;
-           border: 1px solid #e2e8f0;
-           background: white;
-           color: var(--text-primary);
-           border-radius: var(--radius-md);
-           font-weight: 600;
-           cursor: pointer;
-        }
-        .cancel-btn:hover {
-            background: #f8fafc;
-        }
-        
-        .save-btn-full {
-            flex: 1;
-            background: #d946ef;
-            color: white;
-            padding: 0.875rem;
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        .confirm-remove-btn {
-           flex: 1;
-           padding: 0.875rem;
-           background: #ef4444;
-           color: white;
-           border-radius: var(--radius-md);
-           font-weight: 600;
-           cursor: pointer;
-        }
+                .modal-actions-custom {
+                    display: flex;
+                    gap: 1.25rem;
+                }
+                .btn-solid-purple {
+                    flex: 1;
+                    background: #B800C4;
+                    color: white;
+                    padding: 1rem;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    cursor: pointer;
+                    border: none;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: transform 0.2s;
+                }
+                .btn-solid-purple:hover { transform: translateY(-2px); }
 
-        /* Remove Preview */
-        .remove-preview-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .img-circle {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid #e2e8f0;
-        }
-        
-        .img-circle img {
-           width: 100%;
-           height: 100%;
-           object-fit: cover;
-        }
-        
-        .placeholder-circle {
-           background: #cbd5e1;
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           font-size: 2rem;
-           font-weight: bold;
-           color: white;
-        }
-        
-        .arrow-icon {
-           color: #d946ef;
-        }
-      `}</style>
+                .btn-outline-remove {
+                    flex: 1;
+                    background: white;
+                    color: #ff4757;
+                    border: 1px solid #f1f5f9;
+                    padding: 1rem;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    cursor: pointer;
+                }
+                .btn-outline-remove:hover { background: #fff5f5; border-color: #fedada; }
+
+                .btn-outline-cancel {
+                    flex: 1;
+                    background: white;
+                    color: #B800C4;
+                    border: 1px solid #f1f5f9;
+                    padding: 1rem;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    cursor: pointer;
+                }
+                .btn-outline-cancel:hover { background: #fdf4ff; border-color: #fce7f3; }
+
+                .btn-solid-red {
+                    flex: 1;
+                    background: #ff4757;
+                    color: white;
+                    padding: 1rem;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    border: none;
+                    cursor: pointer;
+                }
+                .btn-solid-red:hover { background: #ee3141; }
+
+                /* Remove View Specifics */
+                .remove-preview-flow {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 1.5rem;
+                    margin-bottom: 2rem;
+                }
+                .img-circle-small {
+                    width: 100px;
+                    height: 100px;
+                    border-radius: 50%;
+                    overflow: hidden;
+                    border: 2px solid #f1f5f9;
+                }
+                .img-circle-small img { width: 100%; height: 100%; object-fit: cover; }
+                .placeholder-bg {
+                    background: #cbd5e1;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 3rem;
+                    font-weight: 800;
+                    color: white;
+                }
+                .flow-arrow {
+                    background: white;
+                    padding: 8px;
+                    border-radius: 50%;
+                    display: flex;
+                }
+
+                .pop-in { animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+                @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+            `}</style>
         </div>
     );
 };

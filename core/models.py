@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from auditlog.registry import auditlog
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -107,3 +108,37 @@ class WikiPage(models.Model):
 
     def __str__(self):
         return self.title
+
+class UserNotification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=50, default='INFO') # e.g., 'ACTION_REQUIRED', 'INFO'
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+
+@receiver(post_save, sender=Profile)
+def notify_profile_update(sender, instance, created, **kwargs):
+    if not created:
+        # Check if there's already an unread ACTION_REQUIRED notification
+        existing = UserNotification.objects.filter(
+            user=instance.user,
+            notification_type='ACTION_REQUIRED',
+            is_read=False
+        ).exists()
+        
+        if not existing:
+            UserNotification.objects.create(
+                user=instance.user,
+                notification_type='ACTION_REQUIRED',
+                is_read=False,
+                title="Let's get this done!",
+                message="The admin has already updated your profile and shared a confirmation screenshot for the payment."
+            )
+auditlog.register(Profile)
+auditlog.register(Payslip)
+auditlog.register(Document)
+auditlog.register(WikiPage)

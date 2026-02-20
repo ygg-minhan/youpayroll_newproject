@@ -5,7 +5,7 @@ from .views import (
     UserProfileView, PayslipViewSet, 
     DocumentViewSet, AdminNotificationView,
     GetProfileByEmailView, WikiCategoryViewSet,
-    WikiPageViewSet
+    WikiPageViewSet, UserNotificationViewSet
 )
 
 router = DefaultRouter()
@@ -13,6 +13,7 @@ router.register(r'payslips', PayslipViewSet, basename='payslip')
 router.register(r'documents', DocumentViewSet, basename='document')
 router.register(r'wiki-categories', WikiCategoryViewSet, basename='wiki-category')
 router.register(r'wiki-pages', WikiPageViewSet, basename='wiki-page')
+router.register(r'user-notifications', UserNotificationViewSet, basename='user-notification')
 
 urlpatterns = [
     path('login/', obtain_auth_token, name='api_login'),

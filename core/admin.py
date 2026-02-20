@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, Payslip, Document, AdminNotification, WikiCategory, WikiPage
+from .models import Profile, Payslip, Document, AdminNotification, WikiCategory, WikiPage, UserNotification
 
 @admin.register(WikiCategory)
 class WikiCategoryAdmin(admin.ModelAdmin):
@@ -34,3 +34,9 @@ class DocumentAdmin(admin.ModelAdmin):
 class AdminNotificationAdmin(admin.ModelAdmin):
     list_display = ('title', 'is_active', 'created_at')
     list_filter = ('is_active',)
+
+@admin.register(UserNotification)
+class UserNotificationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'title', 'notification_type', 'is_read', 'created_at')
+    list_filter = ('notification_type', 'is_read')
+    search_fields = ('user__username', 'title')

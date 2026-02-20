@@ -7,7 +7,11 @@ import Placeholder from './pages/Placeholder';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
 import Payslips from './pages/Payslips';
+import PayslipDetail from './pages/PayslipDetail';
+import Documents from './pages/Documents';
 import Wiki from './pages/Wiki';
+
+import { NotificationProvider } from './context/NotificationContext';
 
 // Protected Route Wrapper
 const ProtectedRoute = () => {
@@ -21,28 +25,31 @@ const ProtectedRoute = () => {
 
 function App() {
   return (
-    <AuthProvider> {/* Wrap with Auth Provider */}
-      <BrowserRouter>
-        <Routes>
-          {/* Public Route */}
-          <Route path="/login" element={<Login />} />
+    <AuthProvider>
+      <NotificationProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Route */}
+            <Route path="/login" element={<Login />} />
 
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<DashboardLayout />}>
-              <Route index element={<Overview />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="payslips" element={<Payslips />} />
-              <Route path="wiki" element={<Wiki />} />
-              <Route path="documents" element={<Placeholder title="Documents" />} />
-              <Route path="support" element={<Placeholder title="Support" />} />
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<DashboardLayout />}>
+                <Route index element={<Overview />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="payslips" element={<Payslips />} />
+                <Route path="payslips/:month" element={<PayslipDetail />} />
+                <Route path="documents" element={<Documents />} />
+                <Route path="wiki" element={<Wiki />} />
+                <Route path="support" element={<Placeholder title="Support" />} />
+              </Route>
             </Route>
-          </Route>
 
-          {/* Catch all redirect */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+            {/* Catch all redirect */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

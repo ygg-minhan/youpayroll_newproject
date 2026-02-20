@@ -1,6 +1,93 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Book, ChevronRight, Clock, User, Tag, Edit3, Trash2 } from 'lucide-react';
+import { Search, Plus, Book, ChevronRight, Clock, User, Tag, Edit3, Trash2, Save, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+
+const hrGuideContent = `
+# YOUPayroll HR Guide
+
+The YOUPayroll project is designed to provide users and employees with easy access to their payroll information.
+
+### What You Can Do
+View and manage your payroll details with ease.
+
+### What to Look For
+Ensure your profile and salary details are accurate and up to date.
+
+### What You Need to Know
+Familiarize yourself with key features, access permissions, and payroll timelines.
+
+### How to Access
+Log in using your credentials via the designated portal to securely access your payroll.
+
+---
+
+## User Management
+
+### Adding a User
+1. Go to **Authentication and Authorization**.
+2. Click **Add** next to Users.
+3. Enter a **Username** in the format: \`user@yougotagift\`.
+4. Enter a **Password** (recommended: generate using 1Password).
+5. Click **Save**.
+
+Once created, you will be redirected to the **User Details** page.
+- Add **Personal Information**.
+- Tick the **Staff Status** checkbox.
+- *Do not* tick the **Superuser Status** checkbox unless specifically required.
+- Assign the User to a **Group** (e.g., HR).
+- Click the arrow button to move the user into that group.
+- Click **Save**.
+
+---
+
+## Component Management
+Components manage additional earnings or deductions.
+
+### Adding a Component
+1. Go to **Component Management**.
+2. Click **Add Component**.
+3. Enter the **Component Name**.
+4. Add the **Operations** that define how it's applied.
+5. Click **Save**.
+
+---
+
+## Payee Management
+Manage employee records and TDS setup.
+
+- **HRM ID**: Enter from Zoho People.
+- **TDS Type**: Select legal name and percentage.
+- **Status**: Active, Removed, or Disengaged.
+- **Is Deleted**: Tick this instead of deleting if the employee no longer exists.
+
+### Bank Details
+1. Select Payee.
+2. Enter Bank Details & Save.
+3. **Acknowledge**: Payee must log in to acknowledge.
+4. **Correction**: If payee adds comments, update details and ask for re-acknowledgement.
+
+---
+
+## Pay Run Management
+A Pay Run groups employee payments for a selected month.
+
+### Running a Pay Run
+1. Select **Month & Year**.
+2. Created Pay Run starts as **DUE**.
+3. Run the latest Pay Run (DUE -> COMPLETED).
+4. **Check Error Log**: Review logs for successful registration or errors.
+5. **Handling Errors**: If errors exist, **Reject Pay Run**, fix issues, and create a new one.
+
+---
+
+## Payslip Management (Pay Record Register)
+Once COMPLETED, system generates payslips.
+
+1. Go to **Pay Record Register**.
+2. Select employees whose Pay Run is completed.
+3. Review and **Edit Components** if needed (Earnings/Deductions).
+4. Mark as **Approved**. *Note: No further edits can be added after Approval.*
+`;
 
 const Wiki = () => {
   const [pages, setPages] = useState([]);
@@ -8,11 +95,20 @@ const Wiki = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPage, setSelectedPage] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editData, setEditData] = useState({ title: '', content: '', category: '' });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchData();
+    // Set HR Guide as default view
+    setSelectedPage({
+      id: 'hr-guide',
+      title: 'YOUPayroll HR Guide',
+      content: hrGuideContent,
+      updated_at: new Date().toISOString(),
+      category_name: 'Manual'
+    });
   }, []);
 
   const fetchData = async () => {
@@ -28,157 +124,306 @@ const Wiki = () => {
         fetch('http://127.0.0.1:8000/api/wiki-categories/', { headers })
       ]);
 
-      if (!pagesRes.ok || !catsRes.ok) {
-        throw new Error('Failed to fetch wiki data');
+      if (pagesRes.ok && catsRes.ok) {
+        const pagesData = await pagesRes.json();
+        const catsData = await catsRes.json();
+        setPages(Array.isArray(pagesData) ? pagesData : []);
+        setCategories(Array.isArray(catsData) ? catsData : []);
       }
-
-      const pagesData = await pagesRes.json();
-      const catsData = await catsRes.json();
-
-      setPages(Array.isArray(pagesData) ? pagesData : []);
-      setCategories(Array.isArray(catsData) ? catsData : []);
-      setLoading(false);
     } catch (error) {
       console.error('Error fetching wiki data:', error);
+    } finally {
       setLoading(false);
     }
   };
 
   const handleSave = async () => {
+    console.log('handleSave triggered', editData);
+
+    if (!editData.title || !editData.title.trim()) {
+      alert('Please enter a page title.');
+      return;
+    }
+
+    setIsSaving(true);
+
     try {
       const token = localStorage.getItem('token');
-      const url = selectedPage
+      // A page is "existing" if it has a real database ID (integer)
+      const isExisting = selectedPage && selectedPage.id && !String(selectedPage.id).includes('local');
+
+      const url = isExisting
         ? `http://127.0.0.1:8000/api/wiki-pages/${selectedPage.slug}/`
         : 'http://127.0.0.1:8000/api/wiki-pages/';
-      const method = selectedPage ? 'PATCH' : 'POST';
+
+      const method = isExisting ? 'PATCH' : 'POST';
 
       const headers = {
         'Content-Type': 'application/json'
       };
-      if (token) {
-        headers['Authorization'] = `Token ${token}`;
-      }
+      if (token) headers['Authorization'] = `Token ${token}`;
+
+      // Prepare payload - ensure category is null if not set
+      const payload = {
+        title: editData.title,
+        content: editData.content,
+        category: editData.category || null
+      };
 
       const response = await fetch(url, {
         method,
         headers,
-        body: JSON.stringify(editData)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
-        const savedPage = await response.json();
-        await fetchData();
-        setSelectedPage(savedPage);
+        const savedData = await response.json();
+        console.log('Draft saved successfully:', savedData);
+
+        // Update local list immediately without fetching again (prevents race condition)
+        setPages(prev => {
+          const index = prev.findIndex(p => String(p.id) === String(savedData.id));
+          if (index !== -1) {
+            const newPages = [...prev];
+            newPages[index] = savedData;
+            return newPages;
+          }
+          return [savedData, ...prev]; // Add to top of list
+        });
+        console.log('Current pages state after successful save:', pages);
+
+        setSelectedPage(savedData);
         setIsEditing(false);
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Server error: ${response.status} ${errorText}`);
       }
-    } catch (error) {
-      console.error('Error saving page:', error);
+    } catch (err) {
+      console.warn('Network issue - saving locally for this session:', err);
+
+      const localId = selectedPage?.id || `local-${Date.now()}`;
+      const localSlug = editData.title.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-');
+
+      const mockSavedPage = {
+        ...editData,
+        id: localId,
+        slug: selectedPage?.slug || localSlug || 'new-page',
+        updated_at: new Date().toISOString(),
+        author_name: 'You (Offline)',
+        category_name: categories.find(c => String(c.id) === String(editData.category))?.name || 'Technical'
+      };
+
+      setPages(prev => {
+        const index = prev.findIndex(p => String(p.id) === String(mockSavedPage.id));
+        if (index !== -1) {
+          const newPages = [...prev];
+          newPages[index] = mockSavedPage;
+          return newPages;
+        }
+        return [mockSavedPage, ...prev];
+      });
+
+      setSelectedPage(mockSavedPage);
+      setIsEditing(false);
+    } finally {
+      setIsSaving(false);
     }
   };
 
+  const handleCancel = () => {
+    setIsEditing(false);
+    setIsSaving(false);
+  };
+
   const filteredPages = pages.filter(page =>
-    page.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    page.content.toLowerCase().includes(searchQuery.toLowerCase())
+    (page.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (page.content || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (loading) return <div className="loading">Loading Wiki...</div>;
+  if (loading) return (
+    <div className="wiki-loading">
+      <div className="spinner"></div>
+      <p>Loading YOUPayroll Wiki...</p>
+    </div>
+  );
 
   return (
     <div className="wiki-container">
-      {/* Sidebar: Categories & Page List */}
+      {/* Sidebar */}
       <div className="wiki-sidebar">
-        <div className="search-bar">
-          <Search size={18} />
-          <input
-            type="text"
-            placeholder="Search wiki..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        <button className="create-btn" onClick={() => {
-          setSelectedPage(null);
-          setEditData({ title: '', content: '', category: categories[0]?.id || '' });
-          setIsEditing(true);
-        }}>
-          <Plus size={18} />
-          Create New Page
-        </button>
-
-        <div className="category-section">
-          <h3>Categories</h3>
-          <div className="category-list">
-            {categories.map(cat => (
-              <div key={cat.id} className="category-item">
-                <Tag size={16} />
-                <span>{cat.name}</span>
-              </div>
-            ))}
+        <div className="sidebar-header">
+          <div className="sidebar-top">
+            <h3 className="sidebar-label">Wiki Index</h3>
+            <button className="icon-btn-refresh" onClick={fetchData} title="Sync with server">
+              <Clock size={16} />
+            </button>
           </div>
+
+          <div className="search-box">
+            <Search size={18} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search wiki..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                className="clear-search"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          <button className="create-page-btn" onClick={() => {
+            setSelectedPage(null);
+            setEditData({ title: '', content: '', category: categories[0]?.id || '' });
+            setIsEditing(true);
+          }}>
+            <Plus size={18} />
+            Create New Page
+          </button>
         </div>
 
-        <div className="pages-section">
-          <h3>Pages</h3>
-          <div className="page-list">
-            {filteredPages.map(page => (
+        <div className="sidebar-nav">
+          {!searchQuery && (
+            <div className="nav-group">
+              <h3>CATEGORIES</h3>
+              <div className="nav-list">
+                {categories.map(cat => (
+                  <div key={cat.id} className="nav-item category">
+                    <Tag size={16} />
+                    <span>{cat.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="nav-group">
+            <h3>SYSTEM GUIDES</h3>
+            <div className="nav-list">
               <div
-                key={page.id}
-                className={`page-item ${selectedPage?.id === page.id ? 'active' : ''}`}
+                className={`nav-item page ${selectedPage?.id === 'hr-guide' ? 'active' : ''}`}
                 onClick={() => {
-                  setSelectedPage(page);
+                  setSelectedPage({
+                    id: 'hr-guide',
+                    title: 'YOUPayroll HR Guide',
+                    content: hrGuideContent,
+                    updated_at: new Date().toISOString(),
+                    category_name: 'Manual'
+                  });
                   setIsEditing(false);
                 }}
               >
                 <Book size={16} />
-                <span>{page.title}</span>
-                <ChevronRight size={14} className="arrow" />
+                <span>HR User Guide</span>
+                <ChevronRight size={14} className="chevron" />
               </div>
-            ))}
+            </div>
+          </div>
+
+          <div className="nav-group">
+            <h3>{searchQuery ? `SEARCH RESULTS (${filteredPages.length})` : 'PAGES'}</h3>
+            <div className="nav-list">
+              {filteredPages.length > 0 ? (
+                filteredPages.map(page => (
+                  <div
+                    key={page.id}
+                    className={`nav-item page ${selectedPage?.id === page.id ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedPage(page);
+                      setIsEditing(false);
+                    }}
+                  >
+                    <Book size={16} />
+                    <span className="truncate">{page.title}</span>
+                    <ChevronRight size={14} className="chevron" />
+                  </div>
+                ))
+              ) : (
+                <div className="no-results">
+                  <p>No results found for "{searchQuery}"</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Content Area */}
       <div className="wiki-content">
         {isEditing ? (
-          <div className="edit-view">
-            <input
-              className="title-input"
-              value={editData.title}
-              onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-              placeholder="Page Title"
-            />
-            <select
-              className="category-select"
-              value={editData.category}
-              onChange={(e) => setEditData({ ...editData, category: e.target.value })}
-            >
-              <option value="">Select Category</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
+          <div className="editor-layout">
+            <div className="editor-header">
+              <input
+                className="edit-title-input"
+                value={editData.title}
+                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                placeholder="Enter Page Title..."
+                autoFocus
+              />
+              <select
+                className="edit-category-select"
+                value={editData.category}
+                onChange={(e) => setEditData({ ...editData, category: e.target.value })}
+              >
+                <option value="">Select Category</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+
             <textarea
-              className="content-editor"
+              className="edit-content-textarea"
               value={editData.content}
               onChange={(e) => setEditData({ ...editData, content: e.target.value })}
               placeholder="Write your documentation here (Markdown supported)..."
             />
-            <div className="edit-actions">
-              <button className="cancel-btn" onClick={() => setIsEditing(false)}>Cancel</button>
-              <button className="save-btn" onClick={handleSave}>Save Documentation</button>
+
+            <div className="editor-footer">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={handleCancel}
+                disabled={isSaving}
+              >
+                <X size={18} />
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-save"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSave();
+                }}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <div className="mini-spinner"></div>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={18} />
+                    Save Documentation
+                  </>
+                )}
+              </button>
             </div>
           </div>
         ) : selectedPage ? (
-          <div className="read-view">
+          <div className="viewer-layout">
             <div className="page-header">
-              <h1>{selectedPage.title}</h1>
-              <div className="page-meta">
-                <span className="meta-item"><User size={14} /> {selectedPage.author_name}</span>
-                <span className="meta-item"><Clock size={14} /> {new Date(selectedPage.updated_at).toLocaleDateString()}</span>
-                <span className="meta-item"><Tag size={14} /> {selectedPage.category_name}</span>
-                <button className="edit-icon-btn" onClick={() => {
+              <div className="header-main">
+                <h1>{selectedPage.title}</h1>
+                <button className="btn-edit" onClick={() => {
                   setEditData({
                     title: selectedPage.title,
                     content: selectedPage.content,
@@ -187,18 +432,36 @@ const Wiki = () => {
                   setIsEditing(true);
                 }}>
                   <Edit3 size={18} />
+                  Edit Page
                 </button>
               </div>
+              <div className="page-metadata">
+                <span className="meta-tag"><User size={14} /> {selectedPage.author_name || 'Team member'}</span>
+                <span className="meta-tag"><Clock size={14} /> {new Date(selectedPage.updated_at).toLocaleDateString()}</span>
+                {selectedPage.category_name && (
+                  <span className="meta-tag"><Tag size={14} /> {selectedPage.category_name}</span>
+                )}
+              </div>
             </div>
-            <div className="markdown-container">
+            <div className="content-rendered">
               <ReactMarkdown>{selectedPage.content}</ReactMarkdown>
             </div>
           </div>
         ) : (
-          <div className="empty-state">
-            <Book size={64} className="book-icon" />
-            <h2>Welcome to Tech Wiki</h2>
-            <p>Select a page from the list or create a new one to get started.</p>
+          <div className="wiki-empty">
+            <div className="empty-icon-wrapper">
+              <Book size={80} />
+            </div>
+            <h2>Technical Wiki</h2>
+            <p>Select a topic from the sidebar or start a new documentation entry.</p>
+            <button className="btn-create-first" onClick={() => {
+              setSelectedPage(null);
+              setEditData({ title: '', content: '', category: categories[0]?.id || '' });
+              setIsEditing(true);
+            }}>
+              <Plus size={20} />
+              New Documentation
+            </button>
           </div>
         )}
       </div>
@@ -206,251 +469,329 @@ const Wiki = () => {
       <style>{`
         .wiki-container {
           display: flex;
-          height: calc(100vh - 40px);
-          gap: 2rem;
-          background: #fff;
-          border-radius: 1.5rem;
+          height: calc(100vh - 8rem);
+          background: var(--card-bg);
+          border-radius: 24px;
           overflow: hidden;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+          box-shadow: 0 10px 40px var(--shadow-color);
+          border: 1px solid var(--border-color);
+          transition: background-color 0.3s ease;
         }
 
         .wiki-sidebar {
           width: 320px;
-          border-right: 1px solid #f1f5f9;
-          padding: 1.5rem;
-          background: #f8fafc;
+          background: var(--bg-color);
+          border-right: 1px solid var(--border-color);
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
         }
 
-        .search-bar {
+        .sidebar-header {
+          padding: 1.5rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.25rem;
+        }
+
+        .sidebar-label {
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+          letter-spacing: 0.1em;
+          margin: 0;
+        }
+
+        .icon-btn-refresh {
+          background: none;
+          border: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          transition: all 0.2s;
           display: flex;
           align-items: center;
-          gap: 0.75rem;
-          background: #fff;
-          padding: 0.75rem 1rem;
-          border-radius: 1rem;
-          border: 1px solid #e2e8f0;
+          justify-content: center;
         }
 
-        .search-bar input {
+        .icon-btn-refresh:hover {
+          color: #B800C4;
+          background: rgba(184, 0, 196, 0.05);
+        }
+
+        .search-box {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: var(--card-bg);
+          padding: 0.6rem 0.8rem;
+          border-radius: 10px;
+          border: 1px solid var(--border-color);
+          transition: border-color 0.2s;
+        }
+
+        .search-box:focus-within {
+          border-color: #B800C4;
+        }
+
+        .search-icon {
+          color: var(--text-secondary);
+        }
+
+        .search-box input {
           border: none;
           outline: none;
           width: 100%;
-          font-size: 0.9rem;
+          font-size: 0.85rem;
+          color: var(--text-primary);
+          background: transparent;
         }
 
-        .create-btn {
+        .clear-search {
+          background: var(--bg-color);
+          border: none;
+          color: var(--text-secondary);
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.5rem;
-          background: #B800C4;
-          color: white;
-          border: none;
-          padding: 0.75rem;
-          border-radius: 1rem;
-          font-weight: 600;
           cursor: pointer;
-          transition: transform 0.2s;
-        }
-
-        .create-btn:hover {
-          transform: translateY(-2px);
-          background: #9d00a8;
-        }
-
-        .category-section h3, .pages-section h3 {
-          font-size: 0.75rem;
-          text-transform: uppercase;
-          color: #94a3b8;
-          letter-spacing: 0.05em;
-          margin-bottom: 1rem;
-        }
-
-        .category-list, .page-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .category-item, .page-item {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1rem;
-          border-radius: 0.75rem;
-          cursor: pointer;
-          font-size: 0.9rem;
-          color: #475569;
           transition: all 0.2s;
         }
 
-        .page-item:hover {
-          background: #fff;
-          color: #B800C4;
+        .clear-search:hover {
+          background: var(--border-color);
+          color: var(--text-primary);
         }
 
-        .page-item.active {
-          background: #fff;
-          color: #B800C4;
-          box-shadow: 0 4px 12px rgba(184, 0, 196, 0.1);
+        .no-results {
+          padding: 2rem 1rem;
+          text-align: center;
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+          font-style: italic;
         }
 
-        .page-item .arrow {
-          margin-left: auto;
-          opacity: 0;
-          transition: opacity 0.2s;
-        }
-
-        .page-item:hover .arrow, .page-item.active .arrow {
-          opacity: 1;
-        }
-
-        .wiki-content {
-          flex: 1;
-          padding: 3rem;
-          overflow-y: auto;
-        }
-
-        .empty-state {
+        .create-page-btn {
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
-          height: 100%;
-          color: #94a3b8;
-          text-align: center;
-        }
-
-        .book-icon {
-          margin-bottom: 1.5rem;
-          opacity: 0.2;
-        }
-
-        /* Read View Styles */
-        .page-header h1 {
-          font-size: 2.5rem;
-          font-weight: 800;
-          color: #1e293b;
-          margin-bottom: 1rem;
-        }
-
-        .page-meta {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-          padding-bottom: 2rem;
-          border-bottom: 1px solid #f1f5f9;
-          margin-bottom: 2rem;
-        }
-
-        .meta-item {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          font-size: 0.85rem;
-          color: #64748b;
-        }
-
-        .edit-icon-btn {
-          margin-left: auto;
-          background: none;
-          border: none;
-          color: #94a3b8;
-          cursor: pointer;
-          transition: color 0.2s;
-        }
-
-        .edit-icon-btn:hover {
-          color: #B800C4;
-        }
-
-        .markdown-container {
-          line-height: 1.8;
-          font-size: 1.1rem;
-          color: #334155;
-        }
-
-        .markdown-container h1, .markdown-container h2, .markdown-container h3 {
-          color: #1e293b;
-          margin-top: 2rem;
-          margin-bottom: 1rem;
-        }
-
-        .markdown-container code {
-          background: #f1f5f9;
-          padding: 0.2rem 0.4rem;
-          border-radius: 0.3rem;
-          font-family: 'Fira Code', monospace;
-          font-size: 0.9em;
-        }
-
-        /* Edit View Styles */
-        .edit-view {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-          height: 100%;
-        }
-
-        .title-input {
-          font-size: 2rem;
-          font-weight: 800;
-          border: none;
-          border-bottom: 2px solid #f1f5f9;
-          outline: none;
-          padding-bottom: 0.5rem;
-        }
-
-        .category-select {
-          padding: 0.75rem;
-          border-radius: 0.75rem;
-          border: 1px solid #e2e8f0;
-          outline: none;
-          width: fit-content;
-        }
-
-        .content-editor {
-          flex: 1;
-          border: 1px solid #e2e8f0;
-          border-radius: 1rem;
-          padding: 1.5rem;
-          font-family: inherit;
-          font-size: 1.1rem;
-          resize: none;
-          outline: none;
-          min-height: 400px;
-        }
-
-        .edit-actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: 1rem;
-        }
-
-        .save-btn {
+          gap: 0.5rem;
           background: #B800C4;
           color: white;
           border: none;
-          padding: 0.75rem 1.5rem;
-          border-radius: 0.75rem;
-          font-weight: 600;
+          padding: 0.8rem;
+          border-radius: 12px;
+          font-weight: 700;
           cursor: pointer;
+          font-size: 0.9rem;
         }
 
-        .cancel-btn {
-          background: #f1f5f9;
-          color: #64748b;
+        .sidebar-nav {
+          flex: 1;
+          overflow-y: auto;
+          padding: 1.5rem;
+        }
+
+        .nav-group { margin-bottom: 2rem; }
+        .nav-group h3 {
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+          letter-spacing: 0.1em;
+          margin-bottom: 0.75rem;
+        }
+
+        .nav-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.7rem 0.8rem;
+          border-radius: 10px;
+          cursor: pointer;
+          color: var(--text-secondary);
+          font-size: 0.9rem;
+          transition: all 0.2s;
+        }
+
+        .nav-item:hover { background: rgba(184, 0, 196, 0.05); color: #B800C4; }
+        .nav-item.active { background: var(--card-bg); color: #B800C4; font-weight: 600; box-shadow: 0 2px 8px var(--shadow-color); border: 1px solid var(--border-color); }
+
+        .wiki-content { flex: 1; overflow-y: auto; background: var(--card-bg); position: relative; }
+
+        .editor-layout { display: flex; flex-direction: column; height: 100%; padding: 2.5rem; gap: 1.5rem; }
+        .editor-header { display: flex; flex-direction: column; gap: 1rem; }
+        
+        .edit-title-input {
+          font-size: 2.2rem;
+          font-weight: 800;
           border: none;
+          border-bottom: 2px solid var(--border-color);
+          outline: none;
+          padding-bottom: 0.5rem;
+          color: var(--text-primary);
+          background: transparent;
+        }
+
+        .edit-category-select {
+          width: fit-content;
+          padding: 0.6rem 1rem;
+          border-radius: 8px;
+          border: 1px solid var(--border-color);
+          background: var(--bg-color);
+          color: var(--text-primary);
+        }
+
+        .edit-content-textarea {
+          flex: 1;
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 1.5rem;
+          font-family: inherit;
+          font-size: 1.05rem;
+          line-height: 1.6;
+          resize: none;
+          outline: none;
+          background: var(--bg-color);
+          color: var(--text-primary);
+        }
+
+        .editor-footer {
+          display: flex;
+          justify-content: flex-end;
+          gap: 1rem;
+          padding-top: 1rem;
+          border-top: 1px solid var(--border-color);
+          background: var(--card-bg);
+          z-index: 100;
+        }
+
+        .btn-cancel, .btn-save {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
           padding: 0.75rem 1.5rem;
-          border-radius: 0.75rem;
+          border-radius: 10px;
+          font-weight: 700;
+          cursor: pointer;
+          border: none;
+        }
+
+        .btn-cancel { background: var(--bg-color); color: var(--text-secondary); }
+        .btn-save { background: #B800C4; color: white; box-shadow: 0 4px 12px rgba(184, 0, 196, 0.2); }
+
+        .viewer-layout { padding: 3rem 4rem; max-width: 900px; margin: 0 auto; color: var(--text-primary); }
+        .header-main { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+        .header-main h1 { font-size: 2.8rem; font-weight: 800; color: var(--text-primary); margin: 0; }
+        
+        .btn-edit {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1rem;
+          background: var(--card-bg);
+          border: 1px solid var(--border-color);
+          border-radius: 10px;
+          color: var(--text-secondary);
           font-weight: 600;
           cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-edit:hover {
+          border-color: #B800C4;
+          color: #B800C4;
+        }
+
+        .page-metadata { display: flex; gap: 1.5rem; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
+        .meta-tag { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-secondary); }
+
+        .content-rendered { font-size: 1.1rem; line-height: 1.7; color: var(--text-primary); }
+        .content-rendered h2 { margin-top: 2.5rem; color: var(--text-primary); }
+        .content-rendered p { color: var(--text-primary); }
+
+        .wiki-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
+        .empty-icon-wrapper { width: 120px; height: 120px; background: var(--bg-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); margin-bottom: 1.5rem; }
+        .wiki-empty h2 { color: var(--text-primary); margin-bottom: 0.5rem; }
+        .wiki-empty p { color: var(--text-secondary); margin-bottom: 2rem; }
+        
+        .btn-create-first { background: #B800C4; color: white; border: none; padding: 1rem 1.5rem; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--bg-color); border-top: 4px solid #B800C4; border-radius: 50%; animation: spin 1s linear infinite; }
+        .mini-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .wiki-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 1rem; color: var(--text-secondary); }
+        
+        .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+        @media (max-width: 768px) {
+          .wiki-container {
+            flex-direction: column;
+            height: auto;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+            margin-bottom: 2rem;
+          }
+
+          .wiki-sidebar {
+            width: 100%;
+            height: auto;
+            border-right: none;
+            border-bottom: 1px solid var(--border-color);
+          }
+
+          .sidebar-header {
+            padding: 1rem;
+          }
+
+          .sidebar-nav {
+            padding: 1rem;
+            max-height: 300px;
+          }
+
+          .wiki-content {
+            height: auto;
+            min-height: 50vh;
+          }
+
+          .viewer-layout {
+            padding: 1.5rem;
+          }
+
+          .header-main h1 {
+            font-size: 1.75rem;
+          }
+
+          .page-metadata {
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+          }
+
+          .content-rendered {
+            font-size: 1rem;
+          }
+
+          .editor-layout {
+            padding: 1.25rem;
+          }
+
+          .edit-title-input {
+            font-size: 1.5rem;
+          }
         }
       `}</style>
-    </div>
+    </div >
   );
 };
 
