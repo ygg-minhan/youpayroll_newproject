@@ -50,15 +50,14 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email) => {
         try {
-            // Fetch real user data from backend
-            const response = await fetch(`http://127.0.0.1:8000/api/profile-by-email/${email}/`);
+            const response = await fetch(`http://127.0.0.1:8002/api/profile-by-email/${email}/`);
             if (response.ok) {
                 const profileData = await response.json();
 
                 // Construct full URL for profile picture
                 let avatarUrl = profileData.profile_picture;
                 if (avatarUrl && !avatarUrl.startsWith('http')) {
-                    avatarUrl = `http://127.0.0.1:8000${avatarUrl}`;
+                    avatarUrl = `http://127.0.0.1:8002${avatarUrl}`;
                 }
 
                 const firstName = profileData.user?.first_name || '';

@@ -32,7 +32,7 @@ const TopHeader = ({ onMenuClick }) => {
     return (
         <header className="top-header">
             <div className="mobile-header-logo">
-                <img src="http://127.0.0.1:8000/media/branding/logo.jpg" alt="YOU Payroll" className="header-logo" />
+                <img src="http://127.0.0.1:8002/media/branding/logo.jpg" alt="YOU Payroll" className="header-logo" />
             </div>
 
             <button className="mobile-menu-btn" onClick={onMenuClick}>
@@ -56,11 +56,11 @@ const TopHeader = ({ onMenuClick }) => {
                                 {unreadCount > 0 && <span className="unread-dot-label">{unreadCount} New</span>}
                             </div>
                             <div className="notification-list">
-                                {notifications.length > 0 ? (
-                                    notifications.map(notif => (
+                                {notifications.filter(n => !n.is_read).length > 0 ? (
+                                    notifications.filter(n => !n.is_read).map(notif => (
                                         <div
                                             key={notif.id}
-                                            className={`notification-item ${!notif.is_read ? 'unread' : ''}`}
+                                            className="notification-item unread"
                                             onClick={() => handleNotificationClick(notif)}
                                         >
                                             <div className="notif-icon-box">
@@ -74,7 +74,7 @@ const TopHeader = ({ onMenuClick }) => {
                                                 <p className="notif-msg">{notif.message}</p>
                                                 <span className="notif-time">Just now</span>
                                             </div>
-                                            {!notif.is_read && <span className="active-dot"></span>}
+                                            <span className="active-dot"></span>
                                         </div>
                                     ))
                                 ) : (

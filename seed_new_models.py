@@ -1,80 +1,99 @@
 import os
 import django
 import random
+import sys
 from datetime import date, timedelta
+from decimal import Decimal
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'youpayroll_newproject.settings')
+sys.path.append('/Users/anshik/youpayroll_newproject')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'youpayroll.settings.base')
 django.setup()
 
 from django.contrib.auth.models import User
-from configs.models import Component, TaxDeductedAtSource
-from payees.models import Payee, BankDetail, BankDetailAcknowledgement
-from payroll.models import PayRun, Payment, PayRecordRegister, Form16, Form16Entry
+from configs.models import Component, TDS
+from payees.models import Payee, BankDetails, BankDetailsAck
+from payroll.models import PayRun, Payment, PayRecordRegister, Form16, Form16Entries
 
 def seed():
     print("Seeding new models...")
     
     # Configs
-    comp1, _ = Component.objects.get_or_create(name="Basic Pay", description="Base salary component")
-    comp2, _ = Component.objects.get_or_create(name="HRA", description="House Rent Allowance")
-    comp3, _ = Component.objects.get_or_create(name="Special Allowance", description="Fixed special allowance")
+    comp1, _ = Component.objects.get_or_create(component_name="Basic Pay", defaults={'operation': 'sum'})
+    comp2, _ = Component.objects.get_or_create(component_name="HRA", defaults={'operation': 'sum'})
+    comp3, _ = Component.objects.get_or_create(component_name="Special Allowance", defaults={'operation': 'sum'})
     
-    tds1, _ = TaxDeductedAtSource.objects.get_or_create(name="Income Tax", percentage=10.00)
-    tds2, _ = TaxDeductedAtSource.objects.get_or_create(name="Professional Tax", percentage=2.00)
+    tds1, _ = TDS.objects.get_or_create(tds_legal_name="Individual", defaults={'tds_percentage': 10.00})
+    tds2, _ = TDS.objects.get_or_create(tds_legal_name="Company", defaults={'tds_percentage': 2.00})
 
     # Users / Payees
     users = User.objects.all()
     if not users:
         print("No users found. Create a user first.")
-        return
+        # Create a test admin user if none exists
+        admin_user, _ = User.objects.get_or_create(
+            username='admin', 
+            defaults={'is_staff': True, 'is_superuser': True, 'email': 'admin@example.com'}
+        )
+        admin_user.set_password('admin123')
+        admin_user.save()
+        users = [admin_user]
 
     for user in users:
         payee, created = Payee.objects.get_or_create(
             user=user,
-            defaults={'name': user.get_full_name() or user.username, 'email': user.email}
+            defaults={
+                'full_name': user.get_full_name() or user.username, 
+                'email': user.email,
+                'hrm_id': f"HR{random.randint(1000, 9999)}",
+                'tds_type': tds1
+            }
         )
+        
+        # OneToOne Payment
+        Payment.objects.get_or_create(
+            payee=payee,
+            defaults={'amount': Decimal("50000.00"), 'label': 'Monthly Salary'}
+        )
+
         if created:
-            bd = BankDetail.objects.create(
+            bd = BankDetails.objects.get_or_create(
                 payee=payee,
-                account_number=f"73030100{random.randint(1000, 9999)}",
-                ifsc_code="ICIC0007",
-                bank_name="ICICI Bank",
-                branch_name="Infopark Kochi"
+                defaults={
+                    'account_no': f"73030100{random.randint(1000, 9999)}",
+                    'bank_name': "ICICI Bank",
+                    'account_holder_name': payee.full_name,
+                    'ifsc_code': "ICIC0007",
+                    'branch_address': "Infopark Kochi"
+                }
             )
-            BankDetailAcknowledgement.objects.get_or_create(
-                bank_detail=bd,
-                defaults={'acknowledged_by': User.objects.filter(is_staff=True).first(), 'status': 'APPROVED'}
+            BankDetailsAck.objects.get_or_create(
+                payee=payee,
+                defaults={'is_approved': True}
             )
 
     # Payroll
     today = date.today()
-    for i in range(3):
+    for i in range(1, 4):
         run_date = today - timedelta(days=30 * i)
         pay_run, _ = PayRun.objects.get_or_create(
-            run_date=run_date,
-            defaults={'description': f"Payroll for {run_date.strftime('%B %Y')}", 'status': 'COMPLETED'}
+            month=run_date.month,
+            year=run_date.year,
+            defaults={'status': 'completed'}
         )
         
         for payee in Payee.objects.all():
-            Payment.objects.get_or_create(
+            PayRecordRegister.objects.get_or_create(
                 payee=payee,
                 pay_run=pay_run,
                 defaults={
-                    'amount': random.randint(50000, 150000),
-                    'payment_date': run_date + timedelta(days=5),
-                    'reference_number': f"REF{random.randint(100000, 999999)}"
+                    'amount': Decimal(random.randint(50000, 150000)),
+                    'bank_name': "ICICI Bank",
+                    'account_number': f"73030100{random.randint(1000, 9999)}",
+                    'account_holder_name': payee.full_name,
+                    'ifsc_code': "ICIC0007",
+                    'gross_amount': Decimal(random.randint(60000, 160000)),
                 }
             )
-        
-        PayRecordRegister.objects.get_or_create(pay_run=pay_run)
-
-    for payee in Payee.objects.all():
-        f16, _ = Form16.objects.get_or_create(
-            payee=payee,
-            financial_year="2023-24"
-        )
-        Form16Entry.objects.get_or_create(form16=f16, section="Salaries", defaults={'amount': 1200000})
-        Form16Entry.objects.get_or_create(form16=f16, section="Deductions", defaults={'amount': 150000})
 
     print("Success: New models seeded.")
 

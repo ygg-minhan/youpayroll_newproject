@@ -1,12 +1,12 @@
 from django.contrib import admin
-from .models import Component, TaxDeductedAtSource
+from .models import TDS, Component
 
-@admin.register(Component)
+
+# Register your models here.
+
 class ComponentAdmin(admin.ModelAdmin):
-    list_display = ('name',)
-    search_fields = ('name',)
+    list_display = ('component_name', 'operation')
 
-@admin.register(TaxDeductedAtSource)
-class TaxDeductedAtSourceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'percentage')
-    search_fields = ('name',)
+
+admin.site.register(Component, ComponentAdmin)
+admin.site.register(TDS)

@@ -4,7 +4,7 @@ import sys
 
 # Add project root to path
 sys.path.append('/Users/anshik/youpayroll_newproject')
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'youpayroll_newproject.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'youpayroll.settings.base')
 django.setup()
 
 from core.models import WikiCategory

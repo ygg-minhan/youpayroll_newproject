@@ -22,7 +22,7 @@ const PayslipDetail = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://127.0.0.1:8000/api/payslips/?month=${selectedMonth}`, {
+            const response = await fetch(`http://127.0.0.1:8002/api/payslips/?month=${selectedMonth}`, {
                 headers: { 'Authorization': `Token ${token}` }
             });
             if (response.ok) {
@@ -65,7 +65,7 @@ const PayslipDetail = () => {
         }
 
         const token = localStorage.getItem('token');
-        const baseUrl = 'http://127.0.0.1:8000';
+        const baseUrl = 'http://127.0.0.1:8002';
         const fullUrl = payslip.file.startsWith('http') ? payslip.file : `${baseUrl}${payslip.file}`;
 
         try {

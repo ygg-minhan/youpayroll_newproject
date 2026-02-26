@@ -20,7 +20,7 @@ const ActionRequiredModal = ({ isOpen, onClose, onUpload, onReject }) => {
                 <button className="close-corner-btn" onClick={onClose}><X size={20} /></button>
                 <div className="modal-header-section">
                     <h2 className="modal-title-v2">Action required!</h2>
-                    <p className="modal-subtitle-v2">The admin has already updated your profile and shared a confirmation screenshot for the payment.</p>
+                    <p className="modal-subtitle-v2">Kindly share the confirmation screenshot for the payment after updating your profile.</p>
                 </div>
 
                 <div className="upload-container-v2" onClick={() => fileInputRef.current.click()}>
@@ -56,9 +56,8 @@ const ActionRequiredModal = ({ isOpen, onClose, onUpload, onReject }) => {
                 <div className="modal-footer-v2">
                     <button className="btn-reject-link" onClick={onReject}>Reject modifications?</button>
                     <button
-                        className={`btn-acknowledge-solid ${!selectedFile ? 'disabled' : ''}`}
+                        className="btn-acknowledge-solid"
                         onClick={() => onUpload(selectedFile)}
-                        disabled={!selectedFile}
                     >
                         Acknowledge
                     </button>
@@ -257,7 +256,7 @@ const Profile = () => {
         setIsSaving(true);
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+            const response = await fetch('http://127.0.0.1:8002/api/profile/', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify(updatedData)
@@ -273,7 +272,7 @@ const Profile = () => {
         setIsSaving(true);
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+            const response = await fetch('http://127.0.0.1:8002/api/profile/', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify({ profile_picture: null })
@@ -293,7 +292,7 @@ const Profile = () => {
         setIsSaving(true);
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+            const response = await fetch('http://127.0.0.1:8002/api/profile/', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify({ profile_picture: imageData })
@@ -306,9 +305,20 @@ const Profile = () => {
     };
 
     const handleNotificationAcknowledge = async (file) => {
-        if (notifId) {
-            await markAsRead(notifId);
+        let idToMark = notifId;
+
+        // If no notifId in state (e.g. refresh), try to find an unread ACTION_REQUIRED one
+        if (!idToMark) {
+            const unreadActionNotif = (notifications || []).find(n => n.notification_type === 'ACTION_REQUIRED' && !n.is_read);
+            if (unreadActionNotif) {
+                idToMark = unreadActionNotif.id;
+            }
         }
+
+        if (idToMark) {
+            await markAsRead(idToMark);
+        }
+
         setShowConfirmPopup(false);
         setIsFromNotification(false);
         navigate('/', { state: { success: true } });

@@ -120,8 +120,8 @@ const Wiki = () => {
       }
 
       const [pagesRes, catsRes] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/wiki-pages/', { headers }),
-        fetch('http://127.0.0.1:8000/api/wiki-categories/', { headers })
+        fetch('http://127.0.0.1:8002/api/wiki-pages/', { headers }),
+        fetch('http://127.0.0.1:8002/api/wiki-categories/', { headers })
       ]);
 
       if (pagesRes.ok && catsRes.ok) {
@@ -153,8 +153,8 @@ const Wiki = () => {
       const isExisting = selectedPage && selectedPage.id && !String(selectedPage.id).includes('local');
 
       const url = isExisting
-        ? `http://127.0.0.1:8000/api/wiki-pages/${selectedPage.slug}/`
-        : 'http://127.0.0.1:8000/api/wiki-pages/';
+        ? `http://127.0.0.1:8002/api/wiki-pages/${selectedPage.slug}/`
+        : 'http://127.0.0.1:8002/api/wiki-pages/';
 
       const method = isExisting ? 'PATCH' : 'POST';
 

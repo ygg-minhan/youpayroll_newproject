@@ -20,7 +20,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="logo-container">
-          <img src="http://127.0.0.1:8000/media/branding/logo.jpg" alt="YOU GotaGift Logo" className="logo" />
+          <img src="http://127.0.0.1:8002/media/branding/logo.jpg" alt="YOU GotaGift Logo" className="logo" />
         </div>
 
         <div className="menu-group">

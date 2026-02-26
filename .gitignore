@@ -1,6 +1,7 @@
 *.pyc
 __pycache__/
 db.sqlite3
+db.sqlite3.bak
 media/
 staticfiles/
 .env
@@ -9,4 +10,9 @@ node_modules/
 dist/
 venv/
 env/
+.venv/
 *.log
+.idea/
+data/
+celerybeat-schedule
+backend_backup/

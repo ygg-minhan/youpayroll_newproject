@@ -123,20 +123,30 @@ class UserNotification(models.Model):
 @receiver(post_save, sender=Profile)
 def notify_profile_update(sender, instance, created, **kwargs):
     if not created:
-        # Check if there's already an unread ACTION_REQUIRED notification
+        from django.utils import timezone
+        import datetime
+        # Prevent spamming: only notify if no ACTION_REQUIRED notif exists OR the last one was over 5 mins ago
+        recent_threshold = timezone.now() - datetime.timedelta(minutes=5)
         existing = UserNotification.objects.filter(
             user=instance.user,
             notification_type='ACTION_REQUIRED',
             is_read=False
         ).exists()
         
-        if not existing:
+        # Also check if we just created one recently to avoid echo
+        recent = UserNotification.objects.filter(
+            user=instance.user,
+            notification_type='ACTION_REQUIRED',
+            created_at__gt=recent_threshold
+        ).exists()
+        
+        if not existing and not recent:
             UserNotification.objects.create(
                 user=instance.user,
                 notification_type='ACTION_REQUIRED',
                 is_read=False,
                 title="Let's get this done!",
-                message="The admin has already updated your profile and shared a confirmation screenshot for the payment."
+                message="Kindly share the confirmation screenshot for the payment after updating your profile."
             )
 auditlog.register(Profile)
 auditlog.register(Payslip)

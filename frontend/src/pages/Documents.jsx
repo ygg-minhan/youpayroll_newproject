@@ -17,7 +17,7 @@ const Documents = () => {
       setLoading(true);
       try {
          const token = localStorage.getItem('token');
-         const response = await fetch('http://127.0.0.1:8000/api/documents/', {
+         const response = await fetch('http://127.0.0.1:8002/api/documents/', {
             headers: { 'Authorization': `Token ${token}` }
          });
 
@@ -41,7 +41,7 @@ const Documents = () => {
       }
 
       const token = localStorage.getItem('token');
-      const baseUrl = 'http://127.0.0.1:8000';
+      const baseUrl = 'http://127.0.0.1:8002';
       const fullUrl = doc.file.startsWith('http') ? doc.file : `${baseUrl}${doc.file}`;
 
       try {

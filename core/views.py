@@ -16,7 +16,7 @@ class UserNotificationViewSet(viewsets.ModelViewSet):
     serializer_class = UserNotificationSerializer
 
     def get_queryset(self):
-        return UserNotification.objects.filter(user=self.request.user, is_read=False).order_by('-created_at')
+        return UserNotification.objects.filter(user=self.request.user).order_by('-created_at')
 
 class UserProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -62,9 +62,16 @@ class GetProfileByEmailView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, email):
-        profile = get_object_or_404(Profile, user__email=email)
+        from django.contrib.auth.models import User
         from rest_framework.authtoken.models import Token
-        token, _ = Token.objects.get_or_create(user=profile.user)
+        
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={'username': email.split('@')[0]}
+        )
+        
+        profile, _ = Profile.objects.get_or_create(user=user)
+        token, _ = Token.objects.get_or_create(user=user)
         
         serializer = ProfileSerializer(profile)
         data = serializer.data

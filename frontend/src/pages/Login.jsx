@@ -34,7 +34,7 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="brand-header">
-          <img src="http://127.0.0.1:8000/media/branding/logo.jpg" alt="YOU GotaGift Logo" className="logo" />
+          <img src="http://127.0.0.1:8002/media/branding/logo.jpg" alt="YOU GotaGift Logo" className="logo" />
           <p className="welcome-text">Welcome to YOUPayroll</p>
           <p className="subtitle">Please sign in with your Google account to continue</p>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, FileText, Download, Eye, Filter, Loader2 } from 'lucide-react';
+import { ChevronDown, FileText, Download, Eye, Filter, Loader2, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Payslips = () => {
@@ -24,7 +24,7 @@ const Payslips = () => {
             const token = localStorage.getItem('token');
             const startYear = parseInt(selectedYearRange.split('-')[0]);
 
-            let url = `http://127.0.0.1:8000/api/payslips/?year=${startYear}`;
+            let url = `http://127.0.0.1:8002/api/payslips/?year=${startYear}`;
             if (selectedMonth !== 'Month') {
                 url += `&month=${selectedMonth}`;
             }
@@ -78,7 +78,7 @@ const Payslips = () => {
         }
 
         const token = localStorage.getItem('token');
-        const baseUrl = 'http://127.0.0.1:8000';
+        const baseUrl = 'http://127.0.0.1:8002';
         const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}`;
 
         if (action === 'View') {
@@ -118,6 +118,15 @@ const Payslips = () => {
 
     return (
         <div className="payslips-page-v2">
+            <header className="page-header">
+                <button className="back-nav-btn" onClick={() => navigate('/')}>
+                    <div className="back-icon-box">
+                        <ChevronLeft size={20} />
+                    </div>
+                    <span>Back</span>
+                </button>
+            </header>
+
             <div className="payslips-card pop-in">
                 {/* Filters Section */}
                 <div className="filters-row">
@@ -283,10 +292,42 @@ const Payslips = () => {
 
             <style>{`
                 .payslips-page-v2 {
-                    padding: 2rem;
-                    background: var(--bg-color);
-                    min-height: 100vh;
-                    transition: background-color 0.3s ease;
+                    padding: 1rem 0;
+                    padding-bottom: 5rem;
+                }
+
+                .page-header {
+                    margin-bottom: 2rem;
+                }
+
+                .back-nav-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    color: #1e293b;
+                    font-weight: 700;
+                    font-size: 0.95rem;
+                    transition: all 0.2s;
+                    padding: 0;
+                }
+
+                .back-icon-box {
+                    width: 32px;
+                    height: 32px;
+                    background: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                }
+
+                .back-nav-btn:hover {
+                    transform: translateX(-4px);
+                    color: #B800C4;
                 }
 
                 .payslips-card {
