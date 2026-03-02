@@ -34,12 +34,53 @@ class PayeeAdmin(admin.ModelAdmin):
     inlines = [Form16Inline]
     list_display = ["hrm_id", "full_name", "tds_type", "status", "user"]
     readonly_fields = ["full_name", "email", "pan_no", "address",
-                       "date_of_joining"]
+                       "date_of_joining", "fetch_zoho_button"]
     ordering = ("status",)
+    actions = ['fetch_from_zoho_action']
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
-        fetch_details.delay(obj.hrm_id)
+        # Automatically trigger fetch on save
+        try:
+            fetch_details(obj.hrm_id)
+        except Exception as e:
+            logger.error(f"Auto-fetch failed for {obj.hrm_id}: {e}")
+
+    def fetch_zoho_button(self, obj):
+        if obj.id:
+            return format_html(
+                '<button type="submit" name="_fetch_zoho" class="button" style="background:#B800C4; color:white; border:none; padding:5px 15px; border-radius:4px; cursor:pointer;">Sync with Zoho Now</button>'
+            )
+        return "Save the payee first to enable sync"
+    fetch_zoho_button.short_description = "Zoho Integration"
+
+    @admin.action(description="Fetch details from Zoho")
+    def fetch_from_zoho_action(self, request, queryset):
+        success_count = 0
+        error_count = 0
+        for payee in queryset:
+            try:
+                # We call fetch_details directly since CELERY_TASK_ALWAYS_EAGER is True
+                fetch_details(payee.hrm_id)
+                success_count += 1
+            except Exception as e:
+                error_count += 1
+                logger.error(f"Error fetching Zoho details for {payee.hrm_id}: {e}")
+        
+        if success_count:
+            self.message_user(request, f"Successfully fetched details for {success_count} payees.")
+        if error_count:
+            self.message_user(request, f"Failed to fetch details for {error_count} payees. Check if Zoho tokens are configured.", messages.ERROR)
+
+    def response_change(self, request, obj):
+        if "_fetch_zoho" in request.POST:
+            try:
+                fetch_details(obj.hrm_id)
+                self.message_user(request, "Successfully fetched details from Zoho.")
+            except Exception as e:
+                self.message_user(request, f"Error fetching from Zoho: {e}", messages.ERROR)
+            return super().response_change(request, obj)
+        return super().response_change(request, obj)
 
     def delete_queryset(self, request, queryset):
         queryset.update(is_deleted=True)

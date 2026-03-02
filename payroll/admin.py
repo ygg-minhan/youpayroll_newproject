@@ -156,14 +156,51 @@ class DeductionsInline(admin.TabularInline):
 
 class PayRecordRegisterAdmin(admin.ModelAdmin):
     inlines = [EarningsInline, DeductionsInline]
-    readonly_fields = ('payee', 'amount', 'pay_run', 'tds_percentage',
-                       'bank_name', 'account_number', 'account_holder_name',
-                       'account_type', 'ifsc_code', 'micr_code',
-                       'swift_code', 'branch_address', 'gross_amount',
-                       'net_income')
     list_filter = ('pay_run__status', 'pay_run__month', 'pay_run__year')
     list_display = ('payee', 'amount', 'gross_amount', 'pay_run')
     actions = None  # Disable the delete action
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj: # editing an existing object
+            return ('payee', 'amount', 'pay_run', 'tds_percentage',
+                    'bank_name', 'account_number', 'account_holder_name',
+                    'account_type', 'ifsc_code', 'micr_code',
+                    'swift_code', 'branch_address', 'gross_amount',
+                    'net_income')
+        return () # adding a new object
+
+    def save_model(self, request, obj, form, change):
+        if not change: # Adding a new record
+            from payees.models import BankDetails
+            if obj.payee:
+                # Autopopulate amount from Payment if not provided
+                if not obj.amount:
+                    try:
+                        payment = Payment.objects.get(payee=obj.payee)
+                        obj.amount = payment.amount
+                    except Payment.DoesNotExist:
+                        pass
+                
+                # Autopopulate bank details if not provided
+                if not obj.bank_name:
+                    try:
+                        bank_details = BankDetails.objects.get(payee=obj.payee, payee_acknowledgement=True)
+                        obj.bank_name = bank_details.bank_name
+                        obj.account_number = bank_details.account_no
+                        obj.account_holder_name = bank_details.account_holder_name
+                        obj.account_type = bank_details.account_type
+                        obj.ifsc_code = bank_details.ifsc_code
+                        obj.micr_code = bank_details.micr_code
+                        obj.swift_code = bank_details.swift_code
+                        obj.branch_address = bank_details.branch_address
+                    except BankDetails.DoesNotExist:
+                        pass
+                
+                # Autopopulate tds_percentage
+                if not obj.tds_percentage and obj.payee.tds_type:
+                    obj.tds_percentage = obj.payee.tds_type.tds_percentage
+
+        super().save_model(request, obj, form, change)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

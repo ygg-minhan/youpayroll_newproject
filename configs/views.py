@@ -1,3 +1,13 @@
-from django.shortcuts import render
+from rest_framework import viewsets, permissions
+from .models import Component, TaxDeductedAtSource
+from .serializers import ComponentSerializer, TaxDeductedAtSourceSerializer
 
-# Create your views here.
+class ComponentViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ComponentSerializer
+    queryset = Component.objects.all()
+
+class TaxDeductedAtSourceViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TaxDeductedAtSourceSerializer
+    queryset = TaxDeductedAtSource.objects.all()
