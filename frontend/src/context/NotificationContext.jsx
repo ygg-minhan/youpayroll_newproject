@@ -14,7 +14,7 @@ export const NotificationProvider = ({ children }) => {
 
         try {
             // setLoading(true) removed to avoid flicker on polling
-            const response = await fetch('http://127.0.0.1:8002/api/user-notifications/', {
+            const response = await fetch('http://127.0.0.1:8000/api/user-notifications/', {
                 headers: { 'Authorization': `Token ${token}` }
             });
             if (response.ok) {
@@ -38,7 +38,7 @@ export const NotificationProvider = ({ children }) => {
         if (!token) return;
 
         try {
-            const response = await fetch(`http://127.0.0.1:8002/api/user-notifications/${notifId}/`, {
+            const response = await fetch(`http://127.0.0.1:8000/api/user-notifications/${notifId}/`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify({ is_read: true })

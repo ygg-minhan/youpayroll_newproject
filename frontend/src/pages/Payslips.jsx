@@ -24,7 +24,7 @@ const Payslips = () => {
             const token = localStorage.getItem('token');
             const startYear = parseInt(selectedYearRange.split('-')[0]);
 
-            let url = `http://127.0.0.1:8002/api/payslips/?year=${startYear}`;
+            let url = `http://127.0.0.1:8000/api/payslips/?year=${startYear}`;
             if (selectedMonth !== 'Month') {
                 url += `&month=${selectedMonth}`;
             }
@@ -78,7 +78,7 @@ const Payslips = () => {
         }
 
         const token = localStorage.getItem('token');
-        const baseUrl = 'http://127.0.0.1:8002';
+        const baseUrl = 'http://127.0.0.1:8000';
         const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}`;
 
         if (action === 'View') {

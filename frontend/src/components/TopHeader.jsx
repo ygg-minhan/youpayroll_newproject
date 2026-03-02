@@ -32,7 +32,7 @@ const TopHeader = ({ onMenuClick }) => {
     return (
         <header className="top-header">
             <div className="mobile-header-logo">
-                <img src="http://127.0.0.1:8002/media/branding/logo.jpg" alt="YOU Payroll" className="header-logo" />
+                <img src="http://127.0.0.1:8000/media/branding/logo.jpg" alt="YOU Payroll" className="header-logo" />
             </div>
 
             <button className="mobile-menu-btn" onClick={onMenuClick}>

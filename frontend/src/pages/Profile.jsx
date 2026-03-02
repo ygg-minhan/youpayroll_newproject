@@ -256,7 +256,7 @@ const Profile = () => {
         setIsSaving(true);
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('http://127.0.0.1:8002/api/profile/', {
+            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify(updatedData)
@@ -272,7 +272,7 @@ const Profile = () => {
         setIsSaving(true);
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('http://127.0.0.1:8002/api/profile/', {
+            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify({ profile_picture: null })
@@ -292,7 +292,7 @@ const Profile = () => {
         setIsSaving(true);
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('http://127.0.0.1:8002/api/profile/', {
+            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify({ profile_picture: imageData })
