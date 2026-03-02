@@ -1,8 +1,11 @@
-import os
-import django
+import sys
 
 # Setup Django environment
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'youpayroll_newproject.settings')
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'youpayroll.settings.base')
 django.setup()
 
 from django.contrib.auth.models import User

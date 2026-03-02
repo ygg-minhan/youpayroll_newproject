@@ -5,7 +5,11 @@ import sys
 from datetime import date, timedelta
 from decimal import Decimal
 
-sys.path.append('/Users/anshik/youpayroll_newproject')
+# Dynamic project root
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'youpayroll.settings.base')
 django.setup()
 
