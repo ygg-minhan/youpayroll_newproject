@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE_URL, MEDIA_BASE_URL } from '../api';
 
 const AuthContext = createContext(null);
 
@@ -50,14 +51,14 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email) => {
         try {
-            const response = await fetch(`http://127.0.0.1:8000/api/profile-by-email/${email}/`);
+            const response = await fetch(`${API_BASE_URL}/profile-by-email/${email}/`);
             if (response.ok) {
                 const profileData = await response.json();
 
                 // Construct full URL for profile picture
                 let avatarUrl = profileData.profile_picture;
                 if (avatarUrl && !avatarUrl.startsWith('http')) {
-                    avatarUrl = `http://127.0.0.1:8000${avatarUrl}`;
+                    avatarUrl = `${MEDIA_BASE_URL}${avatarUrl}`;
                 }
 
                 const firstName = profileData.user?.first_name || '';

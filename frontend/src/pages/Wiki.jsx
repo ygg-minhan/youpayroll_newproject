@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Book, ChevronRight, Clock, User, Tag, Edit3, Trash2, Save, X } from 'lucide-react';
+import { Search, Plus, Book, ChevronRight, Clock, User, Tag, Edit3, Save, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { API_BASE_URL } from '../api';
 
 const hrGuideContent = `
 # YOUPayroll HR Guide
@@ -120,8 +121,8 @@ const Wiki = () => {
       }
 
       const [pagesRes, catsRes] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/wiki-pages/', { headers }),
-        fetch('http://127.0.0.1:8000/api/wiki-categories/', { headers })
+        fetch(`${API_BASE_URL}/wiki-pages/`, { headers }),
+        fetch(`${API_BASE_URL}/wiki-categories/`, { headers })
       ]);
 
       if (pagesRes.ok && catsRes.ok) {
@@ -138,8 +139,6 @@ const Wiki = () => {
   };
 
   const handleSave = async () => {
-    console.log('handleSave triggered', editData);
-
     if (!editData.title || !editData.title.trim()) {
       alert('Please enter a page title.');
       return;
@@ -149,21 +148,17 @@ const Wiki = () => {
 
     try {
       const token = localStorage.getItem('token');
-      // A page is "existing" if it has a real database ID (integer)
       const isExisting = selectedPage && selectedPage.id && !String(selectedPage.id).includes('local');
 
       const url = isExisting
-        ? `http://127.0.0.1:8000/api/wiki-pages/${selectedPage.slug}/`
-        : 'http://127.0.0.1:8000/api/wiki-pages/';
+        ? `${API_BASE_URL}/wiki-pages/${selectedPage.slug}/`
+        : `${API_BASE_URL}/wiki-pages/`;
 
       const method = isExisting ? 'PATCH' : 'POST';
 
-      const headers = {
-        'Content-Type': 'application/json'
-      };
+      const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Token ${token}`;
 
-      // Prepare payload - ensure category is null if not set
       const payload = {
         title: editData.title,
         content: editData.content,
@@ -178,9 +173,6 @@ const Wiki = () => {
 
       if (response.ok) {
         const savedData = await response.json();
-        console.log('Draft saved successfully:', savedData);
-
-        // Update local list immediately without fetching again (prevents race condition)
         setPages(prev => {
           const index = prev.findIndex(p => String(p.id) === String(savedData.id));
           if (index !== -1) {
@@ -188,19 +180,15 @@ const Wiki = () => {
             newPages[index] = savedData;
             return newPages;
           }
-          return [savedData, ...prev]; // Add to top of list
+          return [savedData, ...prev];
         });
-        console.log('Current pages state after successful save:', pages);
-
         setSelectedPage(savedData);
         setIsEditing(false);
       } else {
-        const errorText = await response.text();
-        throw new Error(`Server error: ${response.status} ${errorText}`);
+        throw new Error(`Server error: ${response.status}`);
       }
     } catch (err) {
       console.warn('Network issue - saving locally for this session:', err);
-
       const localId = selectedPage?.id || `local-${Date.now()}`;
       const localSlug = editData.title.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-');
 
@@ -249,7 +237,6 @@ const Wiki = () => {
 
   return (
     <div className="wiki-container">
-      {/* Sidebar */}
       <div className="wiki-sidebar">
         <div className="sidebar-header">
           <div className="sidebar-top">
@@ -268,11 +255,7 @@ const Wiki = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
-              <button
-                className="clear-search"
-                onClick={() => setSearchQuery('')}
-                title="Clear search"
-              >
+              <button className="clear-search" onClick={() => setSearchQuery('')}>
                 <X size={14} />
               </button>
             )}
@@ -354,7 +337,6 @@ const Wiki = () => {
         </div>
       </div>
 
-      {/* Content Area */}
       <div className="wiki-content">
         {isEditing ? (
           <div className="editor-layout">
@@ -386,35 +368,12 @@ const Wiki = () => {
             />
 
             <div className="editor-footer">
-              <button
-                type="button"
-                className="btn-cancel"
-                onClick={handleCancel}
-                disabled={isSaving}
-              >
+              <button className="btn-cancel" onClick={handleCancel} disabled={isSaving}>
                 <X size={18} />
                 Cancel
               </button>
-              <button
-                type="button"
-                className="btn-save"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleSave();
-                }}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <>
-                    <div className="mini-spinner"></div>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save size={18} />
-                    Save Documentation
-                  </>
-                )}
+              <button className="btn-save" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? "Saving..." : <><Save size={18} /> Save Documentation</>}
               </button>
             </div>
           </div>
@@ -424,11 +383,7 @@ const Wiki = () => {
               <div className="header-main">
                 <h1>{selectedPage.title}</h1>
                 <button className="btn-edit" onClick={() => {
-                  setEditData({
-                    title: selectedPage.title,
-                    content: selectedPage.content,
-                    category: selectedPage.category
-                  });
+                  setEditData({ title: selectedPage.title, content: selectedPage.content, category: selectedPage.category });
                   setIsEditing(true);
                 }}>
                   <Edit3 size={18} />
@@ -467,331 +422,62 @@ const Wiki = () => {
       </div>
 
       <style>{`
-        .wiki-container {
-          display: flex;
-          height: calc(100vh - 8rem);
-          background: var(--card-bg);
-          border-radius: 24px;
-          overflow: hidden;
-          box-shadow: 0 10px 40px var(--shadow-color);
-          border: 1px solid var(--border-color);
-          transition: background-color 0.3s ease;
-        }
-
-        .wiki-sidebar {
-          width: 320px;
-          background: var(--bg-color);
-          border-right: 1px solid var(--border-color);
-          display: flex;
-          flex-direction: column;
-        }
-
-        .sidebar-header {
-          padding: 1.5rem;
-          display: flex;
-          flex-direction: column;
-          gap: 1.25rem;
-          border-bottom: 1px solid var(--border-color);
-        }
-
-        .sidebar-top {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 0.25rem;
-        }
-
-        .sidebar-label {
-          font-size: 0.75rem;
-          text-transform: uppercase;
-          color: var(--text-secondary);
-          letter-spacing: 0.1em;
-          margin: 0;
-        }
-
-        .icon-btn-refresh {
-          background: none;
-          border: none;
-          color: var(--text-secondary);
-          cursor: pointer;
-          padding: 4px;
-          border-radius: 4px;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .icon-btn-refresh:hover {
-          color: #B800C4;
-          background: rgba(184, 0, 196, 0.05);
-        }
-
-        .search-box {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          background: var(--card-bg);
-          padding: 0.6rem 0.8rem;
-          border-radius: 10px;
-          border: 1px solid var(--border-color);
-          transition: border-color 0.2s;
-        }
-
-        .search-box:focus-within {
-          border-color: #B800C4;
-        }
-
-        .search-icon {
-          color: var(--text-secondary);
-        }
-
-        .search-box input {
-          border: none;
-          outline: none;
-          width: 100%;
-          font-size: 0.85rem;
-          color: var(--text-primary);
-          background: transparent;
-        }
-
-        .clear-search {
-          background: var(--bg-color);
-          border: none;
-          color: var(--text-secondary);
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .clear-search:hover {
-          background: var(--border-color);
-          color: var(--text-primary);
-        }
-
-        .no-results {
-          padding: 2rem 1rem;
-          text-align: center;
-          color: var(--text-secondary);
-          font-size: 0.9rem;
-          font-style: italic;
-        }
-
-        .create-page-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          background: #B800C4;
-          color: white;
-          border: none;
-          padding: 0.8rem;
-          border-radius: 12px;
-          font-weight: 700;
-          cursor: pointer;
-          font-size: 0.9rem;
-        }
-
-        .sidebar-nav {
-          flex: 1;
-          overflow-y: auto;
-          padding: 1.5rem;
-        }
-
+        .wiki-container { display: flex; height: calc(100vh - 8rem); background: var(--card-bg); border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px var(--shadow-color); border: 1px solid var(--border-color); transition: background-color 0.3s ease; }
+        .wiki-sidebar { width: 320px; background: var(--bg-color); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; border-bottom: 1px solid var(--border-color); }
+        .sidebar-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
+        .sidebar-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.1em; margin: 0; }
+        .icon-btn-refresh { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+        .icon-btn-refresh:hover { color: #B800C4; background: rgba(184, 0, 196, 0.05); }
+        .search-box { display: flex; align-items: center; gap: 0.5rem; background: var(--card-bg); padding: 0.6rem 0.8rem; border-radius: 10px; border: 1px solid var(--border-color); transition: border-color 0.2s; }
+        .search-box:focus-within { border-color: #B800C4; }
+        .search-icon { color: var(--text-secondary); }
+        .search-box input { border: none; outline: none; width: 100%; font-size: 0.85rem; color: var(--text-primary); background: transparent; }
+        .clear-search { background: var(--bg-color); border: none; color: var(--text-secondary); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .create-page-btn { display: flex; align-items: center; justify-content: center; gap: 0.5rem; background: #B800C4; color: white; border: none; padding: 0.8rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 1.5rem; }
         .nav-group { margin-bottom: 2rem; }
-        .nav-group h3 {
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          color: var(--text-secondary);
-          letter-spacing: 0.1em;
-          margin-bottom: 0.75rem;
-        }
-
-        .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.7rem 0.8rem;
-          border-radius: 10px;
-          cursor: pointer;
-          color: var(--text-secondary);
-          font-size: 0.9rem;
-          transition: all 0.2s;
-        }
-
+        .nav-group h3 { font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 0.8rem; border-radius: 10px; cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; transition: all 0.2s; }
         .nav-item:hover { background: rgba(184, 0, 196, 0.05); color: #B800C4; }
         .nav-item.active { background: var(--card-bg); color: #B800C4; font-weight: 600; box-shadow: 0 2px 8px var(--shadow-color); border: 1px solid var(--border-color); }
-
         .wiki-content { flex: 1; overflow-y: auto; background: var(--card-bg); position: relative; }
-
         .editor-layout { display: flex; flex-direction: column; height: 100%; padding: 2.5rem; gap: 1.5rem; }
         .editor-header { display: flex; flex-direction: column; gap: 1rem; }
-        
-        .edit-title-input {
-          font-size: 2.2rem;
-          font-weight: 800;
-          border: none;
-          border-bottom: 2px solid var(--border-color);
-          outline: none;
-          padding-bottom: 0.5rem;
-          color: var(--text-primary);
-          background: transparent;
-        }
-
-        .edit-category-select {
-          width: fit-content;
-          padding: 0.6rem 1rem;
-          border-radius: 8px;
-          border: 1px solid var(--border-color);
-          background: var(--bg-color);
-          color: var(--text-primary);
-        }
-
-        .edit-content-textarea {
-          flex: 1;
-          border: 1px solid var(--border-color);
-          border-radius: 12px;
-          padding: 1.5rem;
-          font-family: inherit;
-          font-size: 1.05rem;
-          line-height: 1.6;
-          resize: none;
-          outline: none;
-          background: var(--bg-color);
-          color: var(--text-primary);
-        }
-
-        .editor-footer {
-          display: flex;
-          justify-content: flex-end;
-          gap: 1rem;
-          padding-top: 1rem;
-          border-top: 1px solid var(--border-color);
-          background: var(--card-bg);
-          z-index: 100;
-        }
-
-        .btn-cancel, .btn-save {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
-          border-radius: 10px;
-          font-weight: 700;
-          cursor: pointer;
-          border: none;
-        }
-
+        .edit-title-input { font-size: 2.2rem; font-weight: 800; border: none; border-bottom: 2px solid var(--border-color); outline: none; padding-bottom: 0.5rem; color: var(--text-primary); background: transparent; }
+        .edit-category-select { width: fit-content; padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--text-primary); }
+        .edit-content-textarea { flex: 1; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; font-family: inherit; font-size: 1.05rem; line-height: 1.6; resize: none; outline: none; background: var(--bg-color); color: var(--text-primary); }
+        .editor-footer { display: flex; justify-content: flex-end; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); background: var(--card-bg); }
+        .btn-cancel, .btn-save { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; }
         .btn-cancel { background: var(--bg-color); color: var(--text-secondary); }
         .btn-save { background: #B800C4; color: white; box-shadow: 0 4px 12px rgba(184, 0, 196, 0.2); }
-
         .viewer-layout { padding: 3rem 4rem; max-width: 900px; margin: 0 auto; color: var(--text-primary); }
         .header-main { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
         .header-main h1 { font-size: 2.8rem; font-weight: 800; color: var(--text-primary); margin: 0; }
-        
-        .btn-edit {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 1rem;
-          background: var(--card-bg);
-          border: 1px solid var(--border-color);
-          border-radius: 10px;
-          color: var(--text-secondary);
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .btn-edit:hover {
-          border-color: #B800C4;
-          color: #B800C4;
-        }
-
+        .btn-edit { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-secondary); font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-edit:hover { border-color: #B800C4; color: #B800C4; }
         .page-metadata { display: flex; gap: 1.5rem; margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); }
         .meta-tag { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-secondary); }
-
         .content-rendered { font-size: 1.1rem; line-height: 1.7; color: var(--text-primary); }
-        .content-rendered h2 { margin-top: 2.5rem; color: var(--text-primary); }
-        .content-rendered p { color: var(--text-primary); }
-
         .wiki-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
         .empty-icon-wrapper { width: 120px; height: 120px; background: var(--bg-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); margin-bottom: 1.5rem; }
-        .wiki-empty h2 { color: var(--text-primary); margin-bottom: 0.5rem; }
-        .wiki-empty p { color: var(--text-secondary); margin-bottom: 2rem; }
-        
         .btn-create-first { background: #B800C4; color: white; border: none; padding: 1rem 1.5rem; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
-
         .spinner { width: 40px; height: 40px; border: 4px solid var(--bg-color); border-top: 4px solid #B800C4; border-radius: 50%; animation: spin 1s linear infinite; }
-        .mini-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .wiki-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 1rem; color: var(--text-secondary); }
-        
         .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
         @media (max-width: 768px) {
-          .wiki-container {
-            flex-direction: column;
-            height: auto;
-            border-radius: 0;
-            border: none;
-            box-shadow: none;
-            margin-bottom: 2rem;
-          }
-
-          .wiki-sidebar {
-            width: 100%;
-            height: auto;
-            border-right: none;
-            border-bottom: 1px solid var(--border-color);
-          }
-
-          .sidebar-header {
-            padding: 1rem;
-          }
-
-          .sidebar-nav {
-            padding: 1rem;
-            max-height: 300px;
-          }
-
-          .wiki-content {
-            height: auto;
-            min-height: 50vh;
-          }
-
-          .viewer-layout {
-            padding: 1.5rem;
-          }
-
-          .header-main h1 {
-            font-size: 1.75rem;
-          }
-
-          .page-metadata {
-            flex-wrap: wrap;
-            gap: 0.75rem;
-            margin-bottom: 1.5rem;
-          }
-
-          .content-rendered {
-            font-size: 1rem;
-          }
-
-          .editor-layout {
-            padding: 1.25rem;
-          }
-
-          .edit-title-input {
-            font-size: 1.5rem;
-          }
+          .wiki-container { flex-direction: column; height: auto; border-radius: 0; border: none; box-shadow: none; margin-bottom: 2rem; }
+          .wiki-sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
+          .sidebar-nav { padding: 1rem; max-height: 300px; }
+          .wiki-content { height: auto; min-height: 50vh; }
+          .viewer-layout { padding: 1.5rem; }
+          .header-main h1 { font-size: 1.75rem; }
+          .editor-layout { padding: 1.25rem; }
+          .edit-title-input { font-size: 1.5rem; }
         }
       `}</style>
-    </div >
+    </div>
   );
 };
 

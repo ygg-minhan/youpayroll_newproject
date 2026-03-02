@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Bell, User, CheckCircle, Clock, Menu } from 'lucide-react';
+import { Bell, Menu, User, UserCircle, LogOut, Settings, HelpCircle, ChevronRight, MoreVertical, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useNotification } from '../context/NotificationContext';
+import { useNotifications } from '../context/NotificationContext';
+import { MEDIA_BASE_URL } from '../api';
 
 const TopHeader = ({ onMenuClick }) => {
     const { user } = useAuth();
-    const { notifications, unreadCount, markAsRead } = useNotification();
+    const { notifications, unreadCount, markAsRead } = useNotifications();
     const navigate = useNavigate();
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
@@ -32,7 +33,7 @@ const TopHeader = ({ onMenuClick }) => {
     return (
         <header className="top-header">
             <div className="mobile-header-logo">
-                <img src="http://127.0.0.1:8000/media/branding/logo.jpg" alt="YOU Payroll" className="header-logo" />
+                <img src={`${MEDIA_BASE_URL}/media/branding/logo.jpg`} alt="YOU Payroll" className="header-logo" />
             </div>
 
             <button className="mobile-menu-btn" onClick={onMenuClick}>
@@ -160,7 +161,7 @@ const TopHeader = ({ onMenuClick }) => {
                         align-items: center;
                     }
                     .mobile-menu-btn {
-                        display: none !important;
+                        display: none!important;
                     }
                     .desktop-only {
                         display: none;
@@ -215,7 +216,6 @@ const TopHeader = ({ onMenuClick }) => {
                     box-shadow: 0 2px 4px rgba(184, 0, 196, 0.2);
                 }
 
-                /* Dropdown Styling */
                 .notification-dropdown {
                     position: absolute;
                     top: 55px;
@@ -252,8 +252,8 @@ const TopHeader = ({ onMenuClick }) => {
                     position: relative;
                 }
 
-                .notification-item:hover { background: rgba(0,0,0,0.02); }
-                body.dark-mode .notification-item:hover { background: rgba(255,255,255,0.05); }
+                .notification-item:hover { background: rgba(0, 0, 0, 0.02); }
+                body.dark-mode .notification-item:hover { background: rgba(255, 255, 255, 0.05); }
                 .notification-item.unread { background: rgba(184, 0, 196, 0.03); }
                 .notification-item.unread:hover { background: rgba(184, 0, 196, 0.06); }
 

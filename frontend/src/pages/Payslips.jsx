@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, FileText, Download, Eye, Filter, Loader2, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL, MEDIA_BASE_URL } from '../api';
 
 const Payslips = () => {
     const navigate = useNavigate();
@@ -8,7 +9,6 @@ const Payslips = () => {
     const [selectedMonth, setSelectedMonth] = useState('Month');
     const [payslips, setPayslips] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
     const yearRanges = ['2023-2024', '2024-2025', '2025-2026'];
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -19,12 +19,11 @@ const Payslips = () => {
 
     const fetchPayslips = async () => {
         setLoading(true);
-        setError(null);
         try {
             const token = localStorage.getItem('token');
             const startYear = parseInt(selectedYearRange.split('-')[0]);
 
-            let url = `http://127.0.0.1:8000/api/payslips/?year=${startYear}`;
+            let url = `${API_BASE_URL}/payslips/?year=${startYear}`;
             if (selectedMonth !== 'Month') {
                 url += `&month=${selectedMonth}`;
             }
@@ -78,7 +77,7 @@ const Payslips = () => {
         }
 
         const token = localStorage.getItem('token');
-        const baseUrl = 'http://127.0.0.1:8000';
+        const baseUrl = MEDIA_BASE_URL;
         const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl}`;
 
         if (action === 'View') {
@@ -128,7 +127,6 @@ const Payslips = () => {
             </header>
 
             <div className="payslips-card pop-in">
-                {/* Filters Section */}
                 <div className="filters-row">
                     <div className="filter-dropdown">
                         <Filter size={18} className="filter-icon" />
@@ -162,7 +160,6 @@ const Payslips = () => {
                     </div>
                 </div>
 
-                {/* Desktop Table Section */}
                 <div className="table-responsive desktop-only-table">
                     <table className="payslips-table">
                         <thead>
@@ -227,7 +224,6 @@ const Payslips = () => {
                     </table>
                 </div>
 
-                {/* Mobile Card View */}
                 <div className="mobile-cards-view">
                     {loading ? (
                         <div className="loading-state">
@@ -236,7 +232,6 @@ const Payslips = () => {
                         </div>
                     ) : payslips.length > 0 ? (
                         <div className="payslips-list-mobile">
-                            {/* Summary Card for Mobile */}
                             <div className="payroll-summary-grid">
                                 <div className="summary-item">
                                     <span>Gross Pay</span>
@@ -291,211 +286,60 @@ const Payslips = () => {
             </div>
 
             <style>{`
-                .payslips-page-v2 {
-                    padding: 1rem 0;
-                    padding-bottom: 5rem;
-                }
-
-                .page-header {
-                    margin-bottom: 2rem;
-                }
-
-                .back-nav-btn {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    color: #1e293b;
-                    font-weight: 700;
-                    font-size: 0.95rem;
-                    transition: all 0.2s;
-                    padding: 0;
-                }
-
-                .back-icon-box {
-                    width: 32px;
-                    height: 32px;
-                    background: white;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-                }
-
-                .back-nav-btn:hover {
-                    transform: translateX(-4px);
-                    color: #B800C4;
-                }
-
-                .payslips-card {
-                    background: var(--card-bg);
-                border-radius: 24px;
-                padding: 2.5rem;
-                box-shadow: 0 4px 30px var(--shadow-color);
-                border: 1px solid var(--border-color);
-                }
-
-                /* Filters Styling */
-                .filters-row {
-                    display: flex;
-                gap: 1.5rem;
-                margin-bottom: 2.5rem;
-                }
-
-                .filter-dropdown {
-                    display: flex;
-                align-items: center;
-                gap: 0.75rem;
-                background: var(--bg-color);
-                border: 1px solid var(--border-color);
-                padding: 0.75rem 1.25rem;
-                border-radius: 12px;
-                position: relative;
-                cursor: pointer;
-                min-width: 200px;
-                }
-
-                .filter-icon {color: var(--text-secondary); }
-                .filter-label {color: var(--text-secondary); font-size: 0.95rem; font-weight: 500; }
-
-                .filter-select {
-                    appearance: none;
-                background: transparent;
-                border: none;
-                color: var(--text-primary);
-                font-weight: 700;
-                font-size: 1rem;
-                cursor: pointer;
-                outline: none;
-                flex: 1;
-                padding-right: 1.5rem;
-                z-index: 2;
-                }
-
-                .chevron-icon {
-                    position: absolute;
-                right: 1.25rem;
-                color: var(--text-secondary);
-                pointer-events: none;
-                }
-
-                /* Table Styling */
-                .table-responsive {
-                    overflow - x: auto;
-                }
-
-                .payslips-table {
-                    width: 100%;
-                border-collapse: separate;
-                border-spacing: 0;
-                }
-
-                .payslips-table thead th {
-                    background: var(--bg-color);
-                color: var(--text-primary);
-                font-weight: 700;
-                font-size: 1rem;
-                padding: 1.25rem 1rem;
-                text-align: left;
-                border-bottom: 1px solid var(--border-color);
-                }
-
-                .payslips-table thead th:first-child {border - top - left - radius: 12px; border-bottom-left-radius: 12px; }
-                .payslips-table thead th:last-child {border - top - right - radius: 12px; border-bottom-right-radius: 12px; }
-
-                .payslips-table tbody td {
-                    padding: 1.5rem 1rem;
-                color: var(--text-secondary);
-                font-weight: 600;
-                font-size: 0.95rem;
-                border-bottom: 1px solid var(--border-color);
-                }
-
-                .month-cell {color: var(--text-primary); font-weight: 700; }
-                .amount-cell {color: var(--text-primary); font-weight: 700; }
-
-                /* Action Buttons */
-                .action-buttons-group {
-                    display: flex;
-                gap: 0.75rem;
-                align-items: center;
-                }
-
-                .btn-table-action {
-                    width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                border: 1px solid var(--border-color);
-                background: var(--card-bg);
-                color: #B800C4;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                transition: all 0.2s;
-                }
-
-                .btn-table-action:hover {
-                    background: #B800C4;
-                color: white;
-                border-color: #B800C4;
-                transform: scale(1.1);
-                }
-
-                .table-status {
-                    text - align: center;
-                padding: 4rem 0 !important;
-                color: var(--text-secondary);
-                }
-
-                .spinning-icon {
-                    animation: spin 1s linear infinite;
-                color: #B800C4;
-                margin-bottom: 0.5rem;
-                }
-
-                @keyframes spin {from {transform: rotate(0deg); } to {transform: rotate(360deg); } }
-
-                .pop-in {animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-                @keyframes popIn {
-                    from {opacity: 0; transform: translateY(20px) scale(0.98); }
-                to {opacity: 1; transform: translateY(0) scale(1); } 
-                }
-
+                .payslips-page-v2 { padding: 1rem 0; padding-bottom: 5rem; }
+                .page-header { margin-bottom: 2rem; }
+                .back-nav-btn { display: flex; align-items: center; gap: 0.75rem; background: none; border: none; cursor: pointer; color: var(--text-primary); font-weight: 700; font-size: 0.95rem; transition: all 0.2s; padding: 0; }
+                .back-icon-box { width: 32px; height: 32px; background: var(--card-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px var(--shadow-color); border: 1px solid var(--border-color); }
+                .back-nav-btn:hover { transform: translateX(-4px); color: #B800C4; }
+                .payslips-card { background: var(--card-bg); border-radius: 24px; padding: 2.5rem; box-shadow: 0 4px 30px var(--shadow-color); border: 1px solid var(--border-color); }
+                .filters-row { display: flex; gap: 1.5rem; margin-bottom: 2.5rem; }
+                .filter-dropdown { display: flex; align-items: center; gap: 0.75rem; background: var(--bg-color); border: 1px solid var(--border-color); padding: 0.75rem 1.25rem; border-radius: 12px; position: relative; cursor: pointer; min-width: 200px; }
+                .filter-icon { color: var(--text-secondary); }
+                .filter-label { color: var(--text-secondary); font-size: 0.95rem; font-weight: 500; }
+                .filter-select { appearance: none; background: transparent; border: none; color: var(--text-primary); font-weight: 700; font-size: 1rem; cursor: pointer; outline: none; flex: 1; padding-right: 1.5rem; z-index: 2; }
+                .chevron-icon { position: absolute; right: 1.25rem; color: var(--text-secondary); pointer-events: none; }
+                .table-responsive { overflow-x: auto; }
+                .payslips-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+                .payslips-table thead th { background: var(--bg-color); color: var(--text-primary); font-weight: 700; font-size: 1rem; padding: 1.25rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+                .payslips-table thead th:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+                .payslips-table thead th:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+                .payslips-table tbody td { padding: 1.5rem 1rem; color: var(--text-secondary); font-weight: 600; font-size: 0.95rem; border-bottom: 1px solid var(--border-color); }
+                .month-cell { color: var(--text-primary); font-weight: 700; }
+                .amount-cell { color: var(--text-primary); font-weight: 700; }
+                .action-buttons-group { display: flex; gap: 0.75rem; align-items: center; }
+                .btn-table-action { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--card-bg); color: #B800C4; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+                .btn-table-action:hover { background: #B800C4; color: white; border-color: #B800C4; transform: scale(1.1); }
+                .table-status { text-align: center; padding: 4rem 0 !important; color: var(--text-secondary); }
+                .spinning-icon { animation: spin 1s linear infinite; color: #B800C4; margin-bottom: 0.5rem; }
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                .pop-in { animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+                @keyframes popIn { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
                 @media (max-width: 768px) {
                     .payslips-page-v2 { padding: 1rem; padding-bottom: 5rem; }
                     .payslips-card { padding: 1.25rem; border-radius: 18px; }
-                    .filters-row { gap: 0.75rem; margin-bottom: 1.25rem; }
+                    .filters-row { gap: 0.75rem; margin-bottom: 1.25rem; flex-direction: column; }
                     .filter-dropdown { min-width: 100%; padding: 0.6rem 1rem; }
                     .desktop-only-table { display: none; }
                     .mobile-cards-view { display: block; }
                 }
-
                 .mobile-cards-view { display: none; }
                 .payroll-summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
                 .summary-item { background: var(--bg-color); padding: 1rem; border-radius: 14px; display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--border-color); }
                 .summary-item span { font-size: 0.65rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; }
                 .summary-item strong { font-size: 0.95rem; color: var(--text-primary); font-weight: 800; }
                 .deduction-val { color: #ef4444 !important; }
-                .summary-item.highlight { background: #fdf4ff; border-color: #fce7f3; }
+                .summary-item.highlight { background: rgba(184, 0, 196, 0.05); border-color: rgba(184, 0, 196, 0.2); }
                 .summary-item.highlight strong { color: #B800C4; }
-
                 .list-title { font-size: 1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 1rem; }
                 .payslip-mobile-card { background: var(--bg-color); border-radius: 18px; border: 1px solid var(--border-color); overflow: hidden; margin-bottom: 0.85rem; }
                 .card-main { padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
                 .month-indicator { display: flex; align-items: center; gap: 0.85rem; }
                 .month-indicator h4 { font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin: 0; }
                 .month-indicator span { font-size: 0.7rem; color: var(--text-secondary); font-weight: 600; }
-                
                 .card-actions-v2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; }
                 .btn-mobile-v2 { padding: 0.65rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; border: none; }
                 .btn-mobile-v2:first-child { background: #B800C4; color: white; box-shadow: 0 4px 8px rgba(184, 0, 196, 0.15); }
-                .btn-mobile-v2:last-child { background: white; color: #B800C4; border: 1px solid #fce7f3; }
-                body.dark-mode .btn-mobile-v2:last-child { background: var(--card-bg); border-color: var(--border-color); }
-
+                .btn-mobile-v2:last-child { background: var(--card-bg); color: #B800C4; border: 1px solid var(--border-color); }
                 .card-footer-v2 { padding: 0.75rem 1rem; background: rgba(0,0,0,0.02); border-top: 1px solid var(--border-color); }
                 .footer-item { display: flex; justify-content: space-between; align-items: center; }
                 .footer-item .lbl { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); }

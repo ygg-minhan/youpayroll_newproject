@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { API_BASE_URL } from '../api';
 
 const NotificationContext = createContext(null);
 
@@ -13,8 +14,7 @@ export const NotificationProvider = ({ children }) => {
         if (!token || !isAuthenticated) return;
 
         try {
-            // setLoading(true) removed to avoid flicker on polling
-            const response = await fetch('http://127.0.0.1:8000/api/user-notifications/', {
+            const response = await fetch(`${API_BASE_URL}/user-notifications/`, {
                 headers: { 'Authorization': `Token ${token}` }
             });
             if (response.ok) {
@@ -38,14 +38,13 @@ export const NotificationProvider = ({ children }) => {
         if (!token) return;
 
         try {
-            const response = await fetch(`http://127.0.0.1:8000/api/user-notifications/${notifId}/`, {
+            const response = await fetch(`${API_BASE_URL}/user-notifications/${notifId}/`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify({ is_read: true })
             });
 
             if (response.ok) {
-                // Update local state immediately for better UX
                 setNotifications(prev => prev.map(n =>
                     n.id === notifId ? { ...n, is_read: true } : n
                 ));
@@ -78,10 +77,10 @@ export const NotificationProvider = ({ children }) => {
     );
 };
 
-export const useNotification = () => {
+export const useNotifications = () => {
     const context = useContext(NotificationContext);
     if (!context) {
-        throw new Error('useNotification must be used within a NotificationProvider');
+        throw new Error('useNotifications must be used within a NotificationProvider');
     }
     return context;
 };

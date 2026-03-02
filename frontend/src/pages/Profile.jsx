@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Calendar, Mail, Briefcase, CreditCard, Files, Edit2, Moon, Sun, ChevronUp, ChevronDown, Building, LogOut, Check, X, Camera, Upload, Trash2, FileText, AlertCircle, ArrowRight, Crown } from 'lucide-react';
+import { User, Calendar, Mail, Briefcase, CreditCard, Files, Edit2, Moon, Sun, ChevronUp, ChevronDown, Building, LogOut, Check, X, Camera, Upload, Trash2, FileText, AlertCircle, ArrowRight, Crown, Clock, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
+import { API_BASE_URL, MEDIA_BASE_URL } from '../api';
 import ProfileImageModal from '../components/ProfileImageModal';
 import ProfileInfoModal from '../components/ProfileInfoModal';
 import LogoutModal from '../components/LogoutModal';
-import { useNotification } from '../context/NotificationContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // --- SUB-COMPONENTS FOR NOTIFICATION WORKFLOW ---
 
@@ -211,7 +212,7 @@ const RejectReasonModal = ({ isOpen, onClose, onSubmit }) => {
 
 const Profile = () => {
     const { user, login, logout, isDarkMode, toggleDarkMode } = useAuth();
-    const { markAsRead } = useNotification();
+    const { markAsRead, notifications } = useNotifications();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -256,7 +257,7 @@ const Profile = () => {
         setIsSaving(true);
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+            const response = await fetch(`${API_BASE_URL}/profile/`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify(updatedData)
@@ -272,7 +273,7 @@ const Profile = () => {
         setIsSaving(true);
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+            const response = await fetch(`${API_BASE_URL}/profile/`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify({ profile_picture: null })
@@ -292,7 +293,7 @@ const Profile = () => {
         setIsSaving(true);
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/profile/', {
+            const response = await fetch(`${API_BASE_URL}/profile/`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
                 body: JSON.stringify({ profile_picture: imageData })
@@ -332,13 +333,6 @@ const Profile = () => {
         setIsFromNotification(false);
         navigate('/', { state: { success: true, message: "Modifications rejected. Admin will be notified." } });
     };
-
-    const getInitials = (name) => {
-        if (!name) return 'PB';
-        const parts = name.split(' ');
-        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-        return name[0].toUpperCase();
-    }
 
     return (
         <div className={`profile-page ${isDarkMode ? 'dark' : ''}`}>
@@ -588,7 +582,7 @@ const Profile = () => {
                 .row-label { display: flex; align-items: center; gap: 1rem; color: var(--text-secondary); font-weight: 600; font-size: 1rem; }
                 .row-label i, .row-label svg { color: var(--text-secondary); opacity: 0.5; }
                 .row-value { font-weight: 700; color: var(--text-primary); font-size: 1rem; }
-                .row-value-email { font-weight: 700; color: #ef4444; font-size: 1rem; text-decoration: underline; }
+                .row-value-email { font-weight: 700; color: #B800C4; font-size: 1rem; text-decoration: underline; }
 
                 .reporting-footer-v4 { padding-top: 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
                 .reporting-label { display: flex; align-items: center; gap: 0.75rem; color: var(--text-secondary); font-weight: 700; font-size: 0.9rem; text-transform: uppercase; }

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronDown, Download, Loader2, FileText } from 'lucide-react';
+import { ChevronLeft, Download, Loader2, FileText } from 'lucide-react';
+import { API_BASE_URL, MEDIA_BASE_URL } from '../api';
 
 const Documents = () => {
    const navigate = useNavigate();
-   const [selectedYear, setSelectedYear] = useState('2024-2025');
    const [documents, setDocuments] = useState([]);
    const [loading, setLoading] = useState(false);
 
@@ -17,7 +17,7 @@ const Documents = () => {
       setLoading(true);
       try {
          const token = localStorage.getItem('token');
-         const response = await fetch('http://127.0.0.1:8000/api/documents/', {
+         const response = await fetch(`${API_BASE_URL}/documents/`, {
             headers: { 'Authorization': `Token ${token}` }
          });
 
@@ -41,7 +41,7 @@ const Documents = () => {
       }
 
       const token = localStorage.getItem('token');
-      const baseUrl = 'http://127.0.0.1:8000';
+      const baseUrl = MEDIA_BASE_URL;
       const fullUrl = doc.file.startsWith('http') ? doc.file : `${baseUrl}${doc.file}`;
 
       try {
@@ -80,7 +80,6 @@ const Documents = () => {
          <div className="documents-card fade-in">
             <h1 className="card-title">Form 16</h1>
 
-            {/* Desktop Table */}
             <div className="table-container desktop-only-table">
                <table className="docs-table">
                   <thead>
@@ -133,7 +132,6 @@ const Documents = () => {
                </table>
             </div>
 
-            {/* Mobile Cards */}
             <div className="mobile-docs-view">
                {loading ? (
                   <div className="loading-state">
@@ -201,7 +199,7 @@ const Documents = () => {
                background: none;
                border: none;
                cursor: pointer;
-               color: #1e293b;
+               color: var(--text-primary);
                font-weight: 700;
                font-size: 0.95rem;
                transition: all 0.2s;
@@ -210,12 +208,13 @@ const Documents = () => {
             .back-icon-box {
                width: 32px;
                height: 32px;
-               background: white;
+               background: var(--card-bg);
                border-radius: 50%;
                display: flex;
                align-items: center;
                justify-content: center;
-               box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+               box-shadow: 0 4px 10px var(--shadow-color);
+               border: 1px solid var(--border-color);
             }
 
             .back-nav-btn:hover {
@@ -241,7 +240,7 @@ const Documents = () => {
             }
 
             .table-container {
-               overflow-x: auto;
+                overflow-x: auto;
             }
 
             .docs-table {
@@ -275,13 +274,7 @@ const Documents = () => {
             }
 
             .year-cell { color: var(--text-secondary) !important; }
-            .type-cell { color: var(--text-primary); }
-            .date-cell { color: var(--text-secondary) !important; }
-
-            .action-col {
-               text-align: right;
-               width: 100px;
-            }
+            .action-col { text-align: right; width: 100px; }
 
             .download-action-btn {
                width: 36px;
@@ -308,11 +301,9 @@ const Documents = () => {
                text-align: center;
                padding: 4rem !important;
                color: var(--text-secondary);
-               display: flex;
-               flex-direction: column;
-               align-items: center;
-               gap: 1rem;
             }
+
+            .loading-state { padding: 4rem 0; text-align: center; color: var(--text-secondary); }
 
             .spinning {
                animation: spin 1s linear infinite;
@@ -322,11 +313,6 @@ const Documents = () => {
             @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             .fade-in { animation: fadeIn 0.4s ease-out; }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-            @media (max-width: 640px) {
-               .documents-card { padding: 1.5rem; border-radius: 20px; }
-               .docs-table th, .docs-table td { padding: 1rem 0.75rem; font-size: 0.85rem; }
-            }
          `}</style>
       </div>
    );

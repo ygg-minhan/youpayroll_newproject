@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronDown, Download, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL, MEDIA_BASE_URL } from '../api';
 
 const PayslipDetail = () => {
     const navigate = useNavigate();
@@ -22,7 +23,7 @@ const PayslipDetail = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://127.0.0.1:8000/api/payslips/?month=${selectedMonth}`, {
+            const response = await fetch(`${API_BASE_URL}/payslips/?month=${selectedMonth}`, {
                 headers: { 'Authorization': `Token ${token}` }
             });
             if (response.ok) {
@@ -65,7 +66,7 @@ const PayslipDetail = () => {
         }
 
         const token = localStorage.getItem('token');
-        const baseUrl = 'http://127.0.0.1:8000';
+        const baseUrl = MEDIA_BASE_URL;
         const fullUrl = payslip.file.startsWith('http') ? payslip.file : `${baseUrl}${payslip.file}`;
 
         try {
@@ -96,7 +97,7 @@ const PayslipDetail = () => {
                 <Loader2 className="spinning-icon" size={48} />
                 <p>Loading Payslip Details...</p>
                 <style>{`
-                    .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; color: #64748b; gap: 1rem; }
+                    .loading-container { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; color: var(--text-secondary); gap: 1rem; }
                     .spinning-icon { animation: spin 1s linear infinite; color: #B800C4; }
                     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 `}</style>
@@ -148,8 +149,7 @@ const PayslipDetail = () => {
                     <div className="viz-container">
                         <div className="donut-wrapper">
                             <svg viewBox="0 0 100 100" className="donut-svg">
-                                <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5f9" strokeWidth="10" />
-                                {/* Blue Gradient Segment - Net Salary */}
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border-color)" strokeWidth="10" />
                                 <circle
                                     cx="50" cy="50" r="45"
                                     fill="none"
@@ -159,7 +159,6 @@ const PayslipDetail = () => {
                                     strokeLinecap="round"
                                     transform="rotate(-90 50 50)"
                                 />
-                                {/* Purple Segment */}
                                 <circle
                                     cx="50" cy="50" r="45"
                                     fill="none"
@@ -220,206 +219,36 @@ const PayslipDetail = () => {
             </div>
 
             <style>{`
-                .payslip-detail-page {
-                    padding: 1rem 0;
-                }
-
-                .back-nav-btn {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    margin-bottom: 2rem;
-                    color: #1e293b;
-                    font-weight: 700;
-                    font-size: 0.95rem;
-                }
-
-                .back-icon-box {
-                    width: 32px;
-                    height: 32px;
-                    background: white;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-                }
-
-                .payslip-main-card {
-                    background: var(--card-bg);
-                    border-radius: 32px;
-                    padding: 3rem;
-                    box-shadow: 0 10px 40px var(--shadow-color);
-                    max-width: 800px;
-                    border: 1px solid var(--border-color);
-                    transition: background-color 0.3s ease;
-                }
-
-                .card-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    margin-bottom: 3.5rem;
-                }
-
-                .card-title {
-                    font-size: 1.8rem;
-                    font-weight: 800;
-                    color: var(--text-primary);
-                    margin-bottom: 0.25rem;
-                }
-
-                .user-meta {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    color: var(--text-secondary);
-                    font-weight: 600;
-                    font-size: 0.9rem;
-                }
-
-                .header-actions {
-                    display: flex;
-                    align-items: center;
-                    gap: 1.25rem;
-                }
-
-                .month-picker {
-                    position: relative;
-                    background: var(--bg-color);
-                    border-radius: 12px;
-                    padding: 0.5rem 1rem;
-                    display: flex;
-                    align-items: center;
-                    border: 1px solid var(--border-color);
-                }
-
-                .styled-select {
-                    appearance: none;
-                    background: transparent;
-                    border: none;
-                    outline: none;
-                    font-weight: 700;
-                    color: var(--text-primary);
-                    padding-right: 1.5rem;
-                    cursor: pointer;
-                }
-
-                .select-arrow {
-                    position: absolute;
-                    right: 0.75rem;
-                    pointer-events: none;
-                    color: var(--text-secondary);
-                }
-
-                .icon-action-btn {
-                    width: 44px;
-                    height: 44px;
-                    background: var(--card-bg);
-                    border: 1px solid var(--border-color);
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    box-shadow: 0 2px 4px var(--shadow-color);
-                }
-
-                .icon-action-btn:hover {
-                    box-shadow: 0 4px 12px rgba(184, 0, 196, 0.2);
-                    transform: translateY(-2px);
-                    border-color: #B800C4;
-                }
-
-                .chart-content-grid {
-                    display: grid;
-                    grid-template-columns: 1.2fr 1fr;
-                    gap: 4rem;
-                    align-items: center;
-                }
-
-                .donut-wrapper {
-                    position: relative;
-                    width: 260px;
-                    height: 260px;
-                    margin: 0 auto;
-                }
-                
-                .donut-svg circle:first-child {
-                    stroke: var(--border-color);
-                }
-
-                .donut-center {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    text-align: center;
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .inner-label {
-                    color: #a78bfa;
-                    font-size: 0.85rem;
-                    font-weight: 700;
-                }
-
-                .inner-value {
-                    color: var(--text-primary);
-                    font-size: 1.5rem;
-                    font-weight: 800;
-                    letter-spacing: 0.5px;
-                }
-
-                .metrics-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 2.5rem 1.5rem;
-                }
-
-                .metric-item {
-                    display: flex;
-                    gap: 1rem;
-                }
-
-                .indicator {
-                    width: 4px;
-                    height: 40px;
-                    border-radius: 10px;
-                }
-
+                .payslip-detail-page { padding: 1rem 0; }
+                .back-nav-btn { display: flex; align-items: center; gap: 0.75rem; background: none; border: none; cursor: pointer; margin-bottom: 2rem; color: var(--text-primary); font-weight: 700; font-size: 0.95rem; }
+                .back-icon-box { width: 32px; height: 32px; background: var(--card-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px var(--shadow-color); border: 1px solid var(--border-color); }
+                .payslip-main-card { background: var(--card-bg); border-radius: 32px; padding: 3rem; box-shadow: 0 10px 40px var(--shadow-color); max-width: 800px; border: 1px solid var(--border-color); transition: background-color 0.3s ease; }
+                .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3.5rem; }
+                .card-title { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.25rem; }
+                .user-meta { display: flex; align-items: center; gap: 0.75rem; color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; }
+                .header-actions { display: flex; align-items: center; gap: 1.25rem; }
+                .month-picker { position: relative; background: var(--bg-color); border-radius: 12px; padding: 0.5rem 1rem; display: flex; align-items: center; border: 1px solid var(--border-color); }
+                .styled-select { appearance: none; background: transparent; border: none; outline: none; font-weight: 700; color: var(--text-primary); padding-right: 1.5rem; cursor: pointer; }
+                .select-arrow { position: absolute; right: 0.75rem; pointer-events: none; color: var(--text-secondary); }
+                .icon-action-btn { width: 44px; height: 44px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px var(--shadow-color); }
+                .icon-action-btn:hover { box-shadow: 0 4px 12px rgba(184, 0, 196, 0.2); transform: translateY(-2px); border-color: #B800C4; }
+                .chart-content-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 4rem; align-items: center; }
+                .donut-wrapper { position: relative; width: 260px; height: 260px; margin: 0 auto; }
+                .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; }
+                .inner-label { color: #a78bfa; font-size: 0.85rem; font-weight: 700; }
+                .inner-value { color: var(--text-primary); font-size: 1.5rem; font-weight: 800; letter-spacing: 0.5px; }
+                .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem 1.5rem; }
+                .metric-item { display: flex; gap: 1rem; }
+                .indicator { width: 4px; height: 40px; border-radius: 10px; }
                 .bar-blue { background: #3B82F6; }
                 .bar-purple { background: #A855F7; }
                 .bar-teal { background: #2DD4BF; }
                 .bar-orange { background: #F97316; }
-
-                .metric-details {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.25rem;
-                }
-
-                .m-label {
-                    color: var(--text-secondary);
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                }
-
-                .m-value {
-                    color: var(--text-primary);
-                    font-size: 1rem;
-                    font-weight: 800;
-                    letter-spacing: 0.5px;
-                }
-
+                .metric-details { display: flex; flex-direction: column; gap: 0.25rem; }
+                .m-label { color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; }
+                .m-value { color: var(--text-primary); font-size: 1rem; font-weight: 800; letter-spacing: 0.5px; }
                 .fade-in { animation: fadeIn 0.4s ease-out; }
                 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
                 @media (max-width: 900px) {
                     .chart-content-grid { grid-template-columns: 1fr; gap: 3rem; }
                     .payslip-main-card { padding: 2rem; }

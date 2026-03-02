@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FileText, Files, LifeBuoy, LogOut, User, BookOpen } from 'lucide-react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { LayoutDashboard, FileText, Wallet, BookOpen, User, LogOut, ChevronRight, Menu, X, Bell, LifeBuoy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { MEDIA_BASE_URL } from '../api';
 import LogoutModal from './LogoutModal';
+
 
 const Sidebar = ({ isOpen, onClose }) => {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogoutConfirm = () => {
     logout();
@@ -15,29 +18,40 @@ const Sidebar = ({ isOpen, onClose }) => {
     navigate('/login');
   };
 
+  const menuItems = [
+    { title: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { title: 'Payslips', path: '/payslips', icon: Wallet },
+    { title: 'Documents', path: '/documents', icon: FileText },
+    { title: 'Wiki', path: '/wiki', icon: BookOpen },
+    { title: 'Profile', path: '/profile', icon: User },
+  ];
+
   return (
     <>
-      {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="logo-container">
-          <img src="http://127.0.0.1:8000/media/branding/logo.jpg" alt="YOU GotaGift Logo" className="logo" />
+        <div className="sidebar-header">
+          <div className="logo-container">
+            <img src={`${MEDIA_BASE_URL}/media/branding/logo.jpg`} alt="YOUPayroll Logo" className="logo" />
+          </div>
+          <button className="menu-toggle" onClick={onClose}>
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
 
         <div className="menu-group">
           <div className="menu-label">MAIN MENU</div>
           <nav className="nav-menu">
-            <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <LayoutDashboard size={22} />
-              <span>Overview</span>
-            </NavLink>
-            <NavLink to="/payslips" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <FileText size={22} />
-              <span>Payslips</span>
-            </NavLink>
-            <NavLink to="/documents" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-              <Files size={22} />
-              <span>Documents</span>
-            </NavLink>
+            {menuItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => window.innerWidth < 1200 && onClose()}
+              >
+                <item.icon size={22} />
+                <span>{item.title}</span>
+              </NavLink>
+            ))}
           </nav>
         </div>
 
@@ -64,140 +78,158 @@ const Sidebar = ({ isOpen, onClose }) => {
         </div>
 
         <style>{`
-        .sidebar {
-          width: 250px;
-          height: 100vh;
-          background: var(--sidebar-bg);
-          padding: 2.5rem 1.5rem;
-          display: flex;
-          flex-direction: column;
-          border-right: 1px solid var(--border-color);
-          position: fixed;
-          left: 0;
-          top: 0;
-          z-index: 1000;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+          .sidebar {
+            width: 250px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            padding: 2.5rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
 
-        .sidebar-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(4px);
-          z-index: 999;
-          animation: fadeIn 0.2s ease-out;
-        }
+          .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            animation: fadeIn 0.2s ease-out;
+          }
 
-        @media (max-width: 1200px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            .sidebar.open {
-                transform: translateX(0);
-            }
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        .logo-container {
-          margin-bottom: 3rem;
-          padding-left: 0.5rem;
-        }
+          @media (max-width: 1200px) {
+              .sidebar {
+                  transform: translateX(-100%);
+              }
+              .sidebar.open {
+                  transform: translateX(0);
+              }
+          }
+          
+          @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+          }
+          
+          .logo-container {
+            margin-bottom: 3rem;
+            padding-left: 0.5rem;
+          }
 
-        .logo {
-          width: 110px;
-          height: auto;
-          transition: filter 0.3s ease;
-        }
+          .logo {
+            width: 110px;
+            height: auto;
+            transition: filter 0.3s ease;
+          }
 
-        body.dark-mode .logo {
-          filter: invert(1) hue-rotate(180deg) contrast(1.4) saturate(1.2) brightness(1.1);
-          mix-blend-mode: screen;
-        }
-        
-        .menu-group {
-            margin-bottom: 2.5rem;
-        }
+          body.dark-mode .logo {
+            filter: invert(1) hue-rotate(180deg) contrast(1.4) saturate(1.2) brightness(1.1);
+            mix-blend-mode: screen;
+          }
+          
+          .menu-group {
+              margin-bottom: 2.5rem;
+          }
 
-        .menu-label {
-          font-size: 0.7rem;
-          color: var(--text-secondary);
-          margin-bottom: 1.25rem;
-          padding-left: 1rem;
-          letter-spacing: 0.1em;
-          font-weight: 700;
-        }
-        
-        .nav-menu {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-        
-        .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 1.25rem;
-          padding: 0.85rem 1.25rem;
-          border-radius: 16px;
-          color: var(--text-secondary);
-          transition: all 0.2s;
-          font-weight: 600;
-          text-decoration: none;
-        }
-        
-        .nav-item:hover {
-          color: #B800C4;
-          background: #fdf4ff;
-        }
-
-        body.dark-mode .nav-item:hover {
-          background: rgba(184, 0, 196, 0.1);
-        }
-        
-        .nav-item.active {
-          color: #B800C4;
-          background: #fdf4ff;
-        }
-
-        body.dark-mode .nav-item.active {
-          background: rgba(184, 0, 196, 0.15);
-        }
-
-        .sidebar-footer {
-            margin-top: auto;
-        }
-
-        .logout-btn {
+          .menu-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.25rem;
+            padding-left: 1rem;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+          }
+          
+          .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+          
+          .nav-item {
             display: flex;
             align-items: center;
             gap: 1.25rem;
             padding: 0.85rem 1.25rem;
-            color: #ef4444;
-            font-weight: 700;
-            width: 100%;
-            text-align: left;
+            border-radius: 16px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            font-weight: 600;
+            text-decoration: none;
+          }
+          
+          .nav-item:hover {
+            color: #B800C4;
+            background: #fdf4ff;
+          }
+
+          body.dark-mode .nav-item:hover {
+            background: rgba(184, 0, 196, 0.1);
+          }
+          
+          .nav-item.active {
+            color: #B800C4;
+            background: #fdf4ff;
+          }
+
+          body.dark-mode .nav-item.active {
+            background: rgba(184, 0, 196, 0.15);
+          }
+
+          .sidebar-footer {
+              margin-top: auto;
+          }
+
+          .logout-btn {
+              display: flex;
+              align-items: center;
+              gap: 1.25rem;
+              padding: 0.85rem 1.25rem;
+              color: #ef4444;
+              font-weight: 700;
+              width: 100%;
+              text-align: left;
+              background: none;
+              border: none;
+              cursor: pointer;
+              border-radius: 16px;
+              transition: all 0.2s;
+          }
+          
+          .logout-btn:hover {
+              background: #fef2f2;
+          }
+
+          body.dark-mode .logout-btn:hover {
+              background: rgba(239, 68, 68, 0.1);
+          }
+           .menu-toggle {
+            display: none;
             background: none;
             border: none;
+            color: var(--text-primary);
             cursor: pointer;
-            border-radius: 16px;
-            transition: all 0.2s;
-        }
-        
-        .logout-btn:hover {
-            background: #fef2f2;
-        }
+          }
 
-        body.dark-mode .logout-btn:hover {
-            background: rgba(239, 68, 68, 0.1);
-        }
-      `}</style>
+          @media (max-width: 1200px) {
+            .menu-toggle {
+              display: block;
+            }
+            .sidebar-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+          }
+        `}</style>
       </aside>
 
       <LogoutModal

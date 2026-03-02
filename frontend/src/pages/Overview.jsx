@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, CheckCircle, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useNotification } from '../context/NotificationContext';
+import { useNotifications } from '../context/NotificationContext';
 
 // --- Simple Notification Modal (Step 1) ---
 const NotificationModal = ({ isOpen, notification, onAcknowledge, onClose }) => {
@@ -33,7 +33,7 @@ const SuccessBanner = ({ message, onClose }) => (
 
 const Overview = () => {
     const { user } = useAuth();
-    const { actionRequiredNotification } = useNotification();
+    const { actionRequiredNotification } = useNotifications();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -58,20 +58,22 @@ const Overview = () => {
         navigate('/profile', { state: { triggerAction: true, notificationId: notif.id } });
     };
 
+    const userInitialsUrl = `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=B800C4&color=fff&size=128`;
+
     return (
         <div className="overview-page">
-            {showSuccess && <SuccessBanner message="Action completed successfully" onClose={() => setShowSuccess(false)} />}
+            {showSuccess && <SuccessBanner message={location.state?.message || "Action completed successfully"} onClose={() => setShowSuccess(false)} />}
 
             <div className="mobile-hero-v4">
                 <div className="mobile-avatar-circle" onClick={() => navigate('/profile')}>
-                    <img src={user?.avatar || "https://i.pravatar.cc/150?u=paul"} alt="user" />
+                    <img src={user?.avatar || userInitialsUrl} alt="user" />
                 </div>
                 <h1 className="mobile-welcome">Welcome {user?.name?.split(' ')[0] || 'User'}</h1>
             </div>
 
             <header className="overview-header desktop-only">
                 <div className="header-text">
-                    <p className="welcome-tag">👋 Welcome, {user?.name?.split(' ')[0] || 'Paul'}!</p>
+                    <p className="welcome-tag">👋 Welcome, {user?.name?.split(' ')[0] || 'User'}!</p>
                     <h1 className="page-title">Ready to dive in? What's your first move?</h1>
                     <p className="current-date">{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 </div>
@@ -86,9 +88,9 @@ const Overview = () => {
                     <div className="card-icon-container">
                         <svg width="100" height="100" viewBox="0 0 100 100" fill="none">
                             <rect x="25" y="30" width="50" height="40" rx="8" fill="#B800C4" />
-                            <circle cx="30" cy="70" r="10" fill="#fdf4ff" stroke="#B800C4" strokeWidth="2" />
+                            <circle cx="30" cy="70" r="10" fill="var(--card-bg)" stroke="#B800C4" strokeWidth="2" />
                             <path d="M26 70H34M30 66V74" stroke="#B800C4" strokeWidth="2" strokeLinecap="round" />
-                            <rect x="35" y="20" width="30" height="20" rx="4" fill="#fdf4ff" opacity="0.8" />
+                            <rect x="35" y="20" width="30" height="20" rx="4" fill="var(--card-bg)" opacity="0.8" />
                         </svg>
                     </div>
                 </div>
@@ -100,8 +102,8 @@ const Overview = () => {
                     <div className="card-icon-container">
                         <svg width="100" height="100" viewBox="0 0 100 100" fill="none">
                             <path d="M20 75L50 20L80 75H20Z" fill="#B800C4" />
-                            <rect x="47" y="45" width="6" height="15" rx="3" fill="white" />
-                            <circle cx="50" cy="65" r="3" fill="white" />
+                            <rect x="47" y="45" width="6" height="15" rx="3" fill="var(--card-bg)" />
+                            <circle cx="50" cy="65" r="3" fill="var(--card-bg)" />
                         </svg>
                     </div>
                 </div>
@@ -113,10 +115,10 @@ const Overview = () => {
                     </div>
                     <div className="card-icon-container">
                         <svg width="120" height="100" viewBox="0 0 120 100" fill="none">
-                            <rect x="30" y="34" width="40" height="42" rx="12" fill="#FCE7F3" />
+                            <rect x="30" y="34" width="40" height="42" rx="12" fill="var(--border-color)" />
                             <rect x="54" y="30" width="64" height="48" rx="18" fill="#B800C4" />
-                            <line x1="106" y1="38" x2="90" y2="54" stroke="white" strokeWidth="8" strokeLinecap="round" />
-                            <circle cx="83" cy="62" r="5.5" fill="white" />
+                            <line x1="106" y1="38" x2="90" y2="54" stroke="var(--card-bg)" strokeWidth="8" strokeLinecap="round" />
+                            <circle cx="83" cy="62" r="5.5" fill="var(--card-bg)" />
                         </svg>
                     </div>
                 </div>
@@ -179,7 +181,6 @@ const Overview = () => {
                     transform: translateY(-6px);
                     border-color: rgba(184, 0, 196, 0.2);
                 }
-                .action-card-large { grid-column: auto; }
                 .card-content h2 { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); margin-bottom: 0.5rem; }
                 .card-desc { font-size: 0.95rem; color: var(--text-secondary); font-weight: 500; margin-bottom: 1.5rem; max-width: 300px; line-height: 1.5; }
                 .btn-request { background: #B800C4; color: white; border: none; padding: 0.8rem 2.5rem; border-radius: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(184, 0, 196, 0.2); }
